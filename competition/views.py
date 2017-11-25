@@ -59,7 +59,6 @@ def submit(request, tour_name):
     }
     return HttpResponse(template.render(context, request))
 
-
 @login_required
 def predictions(request, tour_name):
     try:
@@ -76,7 +75,19 @@ def predictions(request, tour_name):
     other_user = None
     user_score = None
 
-    if request.GET:
+    if request.method == 'POST':
+        try:
+            prediction_id = request.POST['prediction_id']
+            prediction_prediction = float(request.POST['prediction_prediction'])
+            prediction = Prediction.objects.get(pk=prediction_id,
+                                                user=request.user,
+                                                match__kick_off__gt=timezone.now())
+            if prediction.prediction != prediction_prediction:
+                prediction.prediction = prediction_prediction
+                prediction.save()
+        except (KeyError, ValueError, Prediction.DoesNotExist):
+            pass
+    elif request.GET:
         try:
             other_user = User.objects.get(username=request.GET['user'])
             if other_user == request.user:
@@ -90,6 +101,8 @@ def predictions(request, tour_name):
         except User.DoesNotExist:
             print("User(%s) tried to look at %s's predictions but '%s' does not exist"
                   % (request.user, request.GET['user'], request.GET['user']))
+        except KeyError:
+            other_user = None
 
     if not other_user:
         if not is_participant:

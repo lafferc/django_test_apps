@@ -18,11 +18,31 @@
             <th>Result</th>
             <th>{% if not other_user %}Your {% endif %}Score</th>
         </tr>
+    <script>
+    function edit_prediction(id) {
+        $( "#prediction_score_row_" + id).hide();
+        $( "#prediction_edit_row_" + id).show();
+    }
+    </script>
     {% for prediction in predictions %}
         <tr>
             <td>{{ prediction.match.match_id }}</td>
             <td>{{ prediction.match }}</td>
+        {% if not other_user and not prediction.match.has_started %}
+            <td id="prediction_score_row_{{ prediction.id }}">
+                    {{ prediction.prediction }}
+                    <button data-icon="edit" onclick="edit_prediction('{{ prediction.id }}')" />
+            </td>
+            <td id="prediction_edit_row_{{ prediction.id }}" style="display: none" >
+                <form method="post">{% csrf_token %}
+                    <input type="hidden" name="prediction_id" value="{{ prediction.id }}">
+                    <input type="text" name="prediction_prediction" value="{{ prediction.prediction }}">
+                    <input type="submit" data-icon="check">
+                </form>
+            </td>
+        {% else %}
             <td>{{ prediction.prediction }}</td>
+        {% endif %}
             <td>{{ prediction.match.score }}</td>
             <td>{{ prediction.score }}</td>
         </tr>

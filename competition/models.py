@@ -220,6 +220,11 @@ class Match(models.Model):
         except Match.DoesNotExist:
             pass
 
+    def has_started(self):
+        if self.kick_off > timezone.now():
+            return False
+        return True
+
     class Meta:
         unique_together = ('tournament', 'match_id',)
 

@@ -13,9 +13,9 @@
     {% if TOURNAMENT.state == 1 %}
     <li><a href="{% url 'competition:submit' TOURNAMENT.name %}">Submit Predictions</a></li>
     {% endif %}
-    <li><a href="{% url 'competition:predictions' TOURNAMENT.name %}">My_Predictions</a></li>
+    <li><a href="{% url 'competition:predictions' TOURNAMENT.name %}">My Predictions</a></li>
     {% endif %}
-    <li><a href="{% url 'competition:table' TOURNAMENT.name %}">Leader board</a></li>
+    <li><a href="{% url 'competition:table' TOURNAMENT.name %}">Leaderboard</a></li>
     </ul>
 </div>
 {% endif %}

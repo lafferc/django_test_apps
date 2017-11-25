@@ -118,14 +118,18 @@ class MatchAdmin(admin.ModelAdmin):
 
 
 class PredictionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'match', 'entered')
-    readonly_fields = ('score', "late")
+    list_display = ('pk', 'user', 'match', 'entered')
 
     list_filter = (
-        ('match', admin.RelatedOnlyFieldListFilter),
-        ('user', admin.RelatedOnlyFieldListFilter),
         'match__tournament',
+        ('user', admin.RelatedOnlyFieldListFilter),
+        ('match', admin.RelatedOnlyFieldListFilter),
     )
+
+    def get_readonly_fields(self, request, obj):
+        if obj:
+            return ('user', 'match', 'prediction', 'margin','score', "late")
+        return ('margin','score', "late")
 
 
 admin.site.register(Sport)
