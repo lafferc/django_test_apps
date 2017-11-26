@@ -8,4 +8,5 @@ urlpatterns = [
     url(r'^(?P<tour_name>[^/]+)/predictions/$', views.predictions, name='predictions'),
     url(r'^(?P<tour_name>[^/]+)/table/$', views.table, name='table'),
     url(r'^(?P<tour_name>[^/]+)/join/$', views.join, name='join'),
+    url(r'^(?P<tour_name>[^/]+)/results/$', views.results, name='results'),
 ]

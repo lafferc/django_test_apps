@@ -1,0 +1,26 @@
+{% extends "competition_base.html" %}
+
+{% block content %}
+{% if fixture_list %}
+    <form method="post">{% csrf_token %}
+        <table style="max-width:100% width:auto" border="1">
+            <tr>
+                <th>Match id</th>
+                <th>Match</th>
+                <th>Result</th>
+            </tr>
+        {% for match in fixture_list %}
+            <tr>
+                <td>{{ match.match_id }}</td>
+                <td>{{ match }}</td>
+                <td><input type="text" name="{{match.pk}}"></td>
+            </tr>
+        {% endfor %}
+        </table>
+        <input type="submit" value="Submit"/>
+    </form>
+{% else %}
+    <p>There are no more matches to that have started and do not have scores</p>
+{% endif %}
+
+{% endblock %}

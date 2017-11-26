@@ -15,6 +15,9 @@
     {% endif %}
     <li><a href="{% url 'competition:predictions' TOURNAMENT.name %}">My Predictions</a></li>
     {% endif %}
+    {% if TOURNAMENT.state == 1 and perms.competition.change_match %}
+    <li><a href="{% url 'competition:results' TOURNAMENT.name %}">Submit Results</a></li>
+    {% endif %}
     <li><a href="{% url 'competition:table' TOURNAMENT.name %}">Leaderboard</a></li>
     </ul>
 </div>

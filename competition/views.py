@@ -1,14 +1,21 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, Http404
 from django.template import loader
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from django.db import IntegrityError
 
+import decimal
 from .models import Tournament, Match, Prediction, Participant
 
+
+def tournament_from_name(name):
+    try:
+        return Tournament.objects.get(name=name)
+    except Tournament.DoesNotExist:
+        raise Http404("Tournament does not exist")
 
 @login_required
 def index(request):
@@ -23,10 +30,7 @@ def index(request):
 
 @login_required
 def submit(request, tour_name):
-    try:
-        tournament = Tournament.objects.get(name=tour_name)
-    except Tournament.DoesNotExist:
-        raise Http404("Tournament does not exist")
+    tournament = tournament_from_name(tour_name)
 
     if tournament.state == 2:
         return redirect("competition:table", tour_name=tour_name) 
@@ -61,10 +65,7 @@ def submit(request, tour_name):
 
 @login_required
 def predictions(request, tour_name):
-    try:
-        tournament = Tournament.objects.get(name=tour_name)
-    except Tournament.DoesNotExist:
-        raise Http404("Tournament does not exist")
+    tournament = tournament_from_name(tour_name)
 
     is_participant = True
     if not tournament.participants.filter(pk=request.user.pk).exists():
@@ -125,10 +126,7 @@ def predictions(request, tour_name):
 
 @login_required
 def table(request, tour_name):
-    try:
-        tournament = Tournament.objects.get(name=tour_name)
-    except Tournament.DoesNotExist:
-        raise Http404("Tournament does not exist")
+    tournament = tournament_from_name(tour_name)
 
     is_participant = True
     if not tournament.participants.filter(pk=request.user.pk).exists():
@@ -160,10 +158,7 @@ def table(request, tour_name):
 
 @login_required
 def join(request, tour_name):
-    try:
-        tournament = Tournament.objects.get(name=tour_name)
-    except Tournament.DoesNotExist:
-        raise Http404("Tournament does not exist")
+    tournament = tournament_from_name(tour_name)
 
     if request.method == 'POST':
         try:
@@ -181,3 +176,38 @@ def join(request, tour_name):
     }
     return HttpResponse(template.render(context, request))
 
+
+@permission_required('competition.change_match')
+def results(request, tour_name):
+    tournament = tournament_from_name(tour_name)
+
+    is_participant = True
+    if not tournament.participants.filter(pk=request.user.pk).exists():
+        is_participant = False
+
+    fixture_list = Match.objects.filter(tournament=tournament,
+                                        kick_off__lt=timezone.now(),
+                                        score__isnull=True,
+                                        home_team__isnull=False,
+                                        away_team__isnull=False,
+                                        ).order_by('kick_off')
+
+    if request.method == 'POST':
+        for match in fixture_list:
+            try:
+                match.score = decimal.Decimal(float(request.POST[str(match.pk)]))
+                fixture_list = fixture_list.exclude(pk=match.pk)
+                match.check_predictions()
+                match.save()
+            except (ValueError, KeyError):
+                pass
+
+    current_site = get_current_site(request)
+    template = loader.get_template('match_results.html')
+    context = {
+        'site_name': current_site.name,
+        'TOURNAMENT': tournament,
+        'fixture_list': fixture_list,
+        'is_participant': is_participant,
+    }
+    return HttpResponse(template.render(context, request))
