@@ -20,7 +20,7 @@ class TeamAdmin(admin.ModelAdmin):
 class ParticipantInline(admin.TabularInline):
     model = Participant
     extra = 0
-    readonly_fields = ('score',)
+    readonly_fields = ('score', 'margin_per_match')
 
     def has_delete_permission(self, request, obj=None):
         return False
