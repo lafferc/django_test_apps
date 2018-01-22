@@ -28,7 +28,7 @@ def index(request):
 
 def signup(request):
     if request.method == 'POST':
-        form = SignUpForm(request.POST)
+        user_form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
             user.is_active = False
@@ -46,7 +46,7 @@ def signup(request):
             user.email_user(subject, message)
             return redirect('activation_sent')
     else:
-        form = SignUpForm()
+        user_form = SignUpForm()
     return render(request, 'registration/register.html', {'form': form})
 
 
