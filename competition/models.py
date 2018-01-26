@@ -121,7 +121,6 @@ class Tournament(models.Model):
             message = render_to_string('open_email.html', {
                 'user': user,
                 'tournament_name': self.name,
-                'tournament_link': self.name,
                 'site_name': current_site.name,
                 'site_domain': current_site.name,
                 'protocol': 'https' if request.is_secure() else 'http',
