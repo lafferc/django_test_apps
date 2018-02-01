@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string, get_template
+from django.conf import settings
 import logging
 import csv
 import os
@@ -328,6 +329,6 @@ def handle_match_upload(sender, instance, created, **kwargs):
                 Match(**row).save()
         except (IntegrityError, ValidationError, Team.DoesNotExist, Match.DoesNotExist):
             g_logger.exception("Failed to add match")
-    os.remove(instance.add_matches.name)
+    os.remove(os.path.join(settings.MEDIA_ROOT, instance.add_matches.name))
     instance.add_matches = None
     instance.save()
