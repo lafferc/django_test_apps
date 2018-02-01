@@ -297,7 +297,7 @@ def handle_team_upload(sender, instance, created, **kwargs):
                Team(**row).save()
         except IntegrityError:
             g_logger.exception("Failed to add team")
-    os.remove(instance.add_teams.name)
+    os.remove(os.path.join(settings.MEDIA_ROOT, instance.add_teams.name))
     instance.add_teams = None
     instance.save()
 
