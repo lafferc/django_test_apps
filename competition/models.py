@@ -20,7 +20,7 @@ def current_year():
     return datetime.datetime.today().year
 
 
-YEAR_CHOICES = [(r, r) for r in range(2016, current_year() + 1)]
+YEAR_CHOICES = [(r, r) for r in range(2016, current_year() + 2)]
 
 
 class Sport(models.Model):
