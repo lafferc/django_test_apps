@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import logging
+
+g_logger = logging.getLogger(__name__)
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -17,7 +20,25 @@ class Profile(models.Model):
     email_on_new_competition = models.BooleanField(
             default=True,
             help_text="User will receive an email when new competitions are started")
+    
+    def get_name(self):
+        if display_name_format == 0:
+            return "%s %s" % (self.user.first_name, self.user.last_name)
+        if display_name_format == 1:
+            return "%s" % self.user.username
+        if display_name_format == 2:
+            return "user_%d" % self.user.pk
 
+    def email_user(self, subject, message, new_comp=False):
+        if not self.can_receive_emails:
+            return
+        if new_comp and not self.email_on_new_competition:
+            return
+        try:
+            self.user.email_user(subject, message)
+        except smtplib.SMTPRecipientsRefused:
+            g_logger.error("Recipient Refused:'%s' (user: %s)", 
+                           user.email, user)
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

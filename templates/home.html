@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+    <a href="{% url 'member:profile' %}">Click here to manage your account</a>
     {% if live_tournaments %}
     <h3>Live competitions</h3>
         <ul>

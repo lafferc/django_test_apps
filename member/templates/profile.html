@@ -1,0 +1,9 @@
+{% extends "member_base.html" %}
+
+{% block content %}
+    <h1>Profile for {{ profile.user }}</h1>
+    <p>username:{{ user }}</p>
+    {% csrf_token %}
+    {{ form }}
+
+{% endblock %}
