@@ -10,7 +10,6 @@ from django.template.loader import render_to_string, get_template
 import logging
 import csv
 import os
-import smtplib
 import datetime
 
 g_logger = logging.getLogger(__name__)
@@ -96,16 +95,12 @@ class Tournament(models.Model):
         for user in self.participants.all():
             message = render_to_string('close_email.html', {
                 'user': user,
-                'winner': self.winner,
+                'winner': self.winner.user.profile.get_name(),
                 'winner_score': "%.2f" % self.winner.score,
                 'tournament_name': self.name,
                 'site_name': current_site.name,
             })
-            try:
-                user.email_user(subject, message)
-            except smtplib.SMTPRecipientsRefused:
-                g_logger.error("Recipient Refused:'%s' (user: %s)", 
-                               user.email, user)
+            user.profile.email_user(subject, message)
 
         self.save()
 
@@ -126,11 +121,8 @@ class Tournament(models.Model):
                 'site_domain': current_site.name,
                 'protocol': 'https' if request.is_secure() else 'http',
             })
-            try:
-                user.email_user(subject, message)
-            except smtplib.SMTPRecipientsRefused:
-                g_logger.error("Recipient Refused:'%s' (user: %s)", 
-                               user.email, user)
+            user.profile.email_user(subject, message, new_comp=True)
+
         self.save()
 
     class Meta:

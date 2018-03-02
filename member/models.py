@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import logging
+import smtplib
 
 g_logger = logging.getLogger(__name__)
 
@@ -24,7 +25,10 @@ class Profile(models.Model):
     
     def get_name(self):
         if self.display_name_format == 0:
-            return "%s %s" % (self.user.first_name, self.user.last_name)
+            name = "%s %s" % (self.user.first_name, self.user.last_name)
+            if name == " ":
+                name = self.user.username
+            return name
         if self.display_name_format == 1:
             return "%s" % self.user.username
         if self.display_name_format == 2:
@@ -39,7 +43,9 @@ class Profile(models.Model):
             self.user.email_user(subject, message)
         except smtplib.SMTPRecipientsRefused:
             g_logger.error("Recipient Refused:'%s' (user: %s)", 
-                           user.email, user)
+                           self.user.email, self.user)
+    def __str__(self):
+        return self.user.username
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

@@ -95,10 +95,7 @@ def predictions(request, tour_name):
                 other_user = None
             else:
                 predictions = Prediction.objects.filter(user=other_user, match__tournament=tournament, match__kick_off__lt=timezone.now()).order_by('-match__kick_off')
-                if other_user.first_name and other_user.last_name:
-                    other_user = "%s %s" % (other_user.first_name, other_user.last_name)
-                else:
-                    other_user = other_user.username
+                other_user = other_user.profile.get_name()
         except User.DoesNotExist:
             print("User(%s) tried to look at %s's predictions but '%s' does not exist"
                   % (request.user, request.GET['user'], request.GET['user']))
@@ -136,11 +133,8 @@ def table(request, tour_name):
 
     leaderboard = []
     for participant in Participant.objects.filter(tournament=tournament).order_by('score'):
-        name = "%s %s" % (participant.user.first_name, participant.user.last_name)
-        if name == " ":
-            name = participant.user.username
         leaderboard.append((participant.user.username,
-                            name,
+                            participant.user.profile.get_name(),
                             participant.score,
                             participant.margin_per_match))
 

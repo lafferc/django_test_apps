@@ -11,12 +11,6 @@ from .forms import ProfileForm, NameChangeForm
 
 @login_required
 def profile(request):
-    try:
-        profile = Profile.objects.get(user=request.user)
-    except Profile.DoesNotExist:
-        profile = Profile(user=request.user)
-        profile.save()
-
     if request.method == 'POST':
         user_form = NameChangeForm(request.POST, instance=request.user)
         profile_form = ProfileForm(request.POST, instance=request.user.profile)
@@ -29,12 +23,12 @@ def profile(request):
             # messages.error(request, _('Please correct the error below.'))
     else:
         user_form = NameChangeForm(instance=request.user)
-        profile_form = ProfileForm(instance=profile)
+        profile_form = ProfileForm(instance=request.user.profile)
 
     template = loader.get_template('profile.html')
     current_site = get_current_site(request)
     context = {
-        'profile': profile,
+        'profile': request.user.profile,
         'site_name': current_site.name,
         'user_form': user_form,
         'profile_form': profile_form,
