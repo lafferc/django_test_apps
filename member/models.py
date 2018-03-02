@@ -13,7 +13,8 @@ class Profile(models.Model):
             default=0,
             choices=((0, "Full Name"),
                      (1, "username"),
-                     (2, "user_id")))
+                     (2, "user_id")),
+            help_text="This how other users will see you name displayed")
     can_receive_emails = models.BooleanField(
             default=True,
             help_text="Global email setting, if false the user will not receive any emails")
@@ -22,11 +23,11 @@ class Profile(models.Model):
             help_text="User will receive an email when new competitions are started")
     
     def get_name(self):
-        if display_name_format == 0:
+        if self.display_name_format == 0:
             return "%s %s" % (self.user.first_name, self.user.last_name)
-        if display_name_format == 1:
+        if self.display_name_format == 1:
             return "%s" % self.user.username
-        if display_name_format == 2:
+        if self.display_name_format == 2:
             return "user_%d" % self.user.pk
 
     def email_user(self, subject, message, new_comp=False):

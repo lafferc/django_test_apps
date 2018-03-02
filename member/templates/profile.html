@@ -3,7 +3,12 @@
 {% block content %}
     <h1>Profile for {{ profile.user }}</h1>
     <p>username:{{ user }}</p>
+    <p>Display name:{{ profile.get_name }}</p>
+    <form method="post">
     {% csrf_token %}
-    {{ form }}
+    {{ user_form.as_p }}
+    {{ profile_form.as_p }}
+    <button type="submit">Save changes</button>
+    </form>
 
 {% endblock %}
