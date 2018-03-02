@@ -20,9 +20,12 @@ class TeamAdmin(admin.ModelAdmin):
 class ParticipantInline(admin.TabularInline):
     model = Participant
     extra = 0
-    readonly_fields = ('score', 'margin_per_match')
+    readonly_fields = ('score', 'margin_per_match', 'user')
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request, obj=None):
         return False
 
 
@@ -62,7 +65,7 @@ class TournamentAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj):
         if obj:
-            return ('sport', 'bonus', 'late_get_bonus', 'draw_bonus', 'winner', 'state')
+            return ('sport', 'bonus', 'late_get_bonus', 'draw_bonus', 'winner', 'state', 'year')
         return ('winner')
 
     def get_fieldsets(self, request, obj):

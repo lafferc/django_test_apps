@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string, get_template
+from django.conf import settings
 import logging
 import csv
 import os
@@ -18,7 +19,7 @@ def current_year():
     return datetime.datetime.today().year
 
 
-YEAR_CHOICES = [(r, r) for r in range(2016, current_year() + 3)]
+YEAR_CHOICES = [(r, r) for r in range(2016, current_year() + 2)]
 
 
 class Sport(models.Model):
@@ -116,7 +117,6 @@ class Tournament(models.Model):
             message = render_to_string('open_email.html', {
                 'user': user,
                 'tournament_name': self.name,
-                'tournament_link': self.name,
                 'site_name': current_site.name,
                 'site_domain': current_site.name,
                 'protocol': 'https' if request.is_secure() else 'http',
@@ -289,7 +289,7 @@ def handle_team_upload(sender, instance, created, **kwargs):
                Team(**row).save()
         except IntegrityError:
             g_logger.exception("Failed to add team")
-    os.remove(instance.add_teams.name)
+    os.remove(os.path.join(settings.MEDIA_ROOT, instance.add_teams.name))
     instance.add_teams = None
     instance.save()
 
@@ -321,6 +321,6 @@ def handle_match_upload(sender, instance, created, **kwargs):
                 Match(**row).save()
         except (IntegrityError, ValidationError, Team.DoesNotExist, Match.DoesNotExist):
             g_logger.exception("Failed to add match")
-    os.remove(instance.add_matches.name)
+    os.remove(os.path.join(settings.MEDIA_ROOT, instance.add_matches.name))
     instance.add_matches = None
     instance.save()
