@@ -8,19 +8,27 @@
     
 {% if TOURNAMENT %}
 <div data-role="navbar">
+    <h2 align="center">{{ TOURNAMENT.name }}</h2>
     <ul>
     {% if is_participant %}
-    {% if TOURNAMENT.state == 1 %}
-    <li><a href="{% url 'competition:submit' TOURNAMENT.name %}">Submit Predictions</a></li>
-    {% endif %}
-    <li><a href="{% url 'competition:predictions' TOURNAMENT.name %}">My Predictions</a></li>
+        {% if TOURNAMENT.state == 1 %}
+        <li><a href="{% url 'competition:submit' TOURNAMENT.name %}">Submit Predictions</a></li>
+        {% endif %}
+        <li><a href="{% url 'competition:predictions' TOURNAMENT.name %}">My Predictions</a></li>
     {% endif %}
     {% if TOURNAMENT.state == 1 and perms.competition.change_match %}
-    <li><a href="{% url 'competition:results' TOURNAMENT.name %}">Submit Results</a></li>
+        <li><a href="{% url 'competition:results' TOURNAMENT.name %}">Submit Results</a></li>
     {% endif %}
-    <li><a href="{% url 'competition:table' TOURNAMENT.name %}">Leaderboard</a></li>
+        <li><a href="{% url 'competition:table' TOURNAMENT.name %}">Leaderboard</a></li>
     </ul>
 </div>
 {% endif %}
 
 {% endblock %}
+
+{% block menu %}
+    {% for tournament in live_tournaments %}
+                <li><a href="{% url 'competition:submit' tournament.name %}">{{ tournament.name }}</a></li>
+    {% endfor %}
+{% endblock %}
+

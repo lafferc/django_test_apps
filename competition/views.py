@@ -24,6 +24,7 @@ def index(request):
     context = {
         'site_name': current_site.name,
         'all_tournaments': Tournament.objects.all(),
+        'live_tournaments': Tournament.objects.filter(state=1),
     }
     return HttpResponse(template.render(context, request))
 
@@ -60,6 +61,7 @@ def submit(request, tour_name):
         'TOURNAMENT' : tournament,
         'fixture_list': fixture_list,
         'is_participant': True,
+        'live_tournaments': Tournament.objects.filter(state=1),
     }
     return HttpResponse(template.render(context, request))
 
@@ -117,6 +119,7 @@ def predictions(request, tour_name):
         'TOURNAMENT': tournament,
         'predictions': predictions,
         'is_participant': is_participant,
+        'live_tournaments': Tournament.objects.filter(state=1),
     }
     return HttpResponse(template.render(context, request))
 
@@ -146,6 +149,7 @@ def table(request, tour_name):
         'leaderboard': leaderboard,
         'TOURNAMENT': tournament,
         'is_participant': is_participant,
+        'live_tournaments': Tournament.objects.filter(state=1),
     }
     return HttpResponse(template.render(context, request))
 
@@ -167,6 +171,7 @@ def join(request, tour_name):
         'site_name': current_site.name,
         'TOURNAMENT': tournament,
         'draw_bonus_value': tournament.bonus * tournament.draw_bonus,
+        'live_tournaments': Tournament.objects.filter(state=1),
     }
     return HttpResponse(template.render(context, request))
 
@@ -203,5 +208,6 @@ def results(request, tour_name):
         'TOURNAMENT': tournament,
         'fixture_list': fixture_list,
         'is_participant': is_participant,
+        'live_tournaments': Tournament.objects.filter(state=1),
     }
     return HttpResponse(template.render(context, request))
