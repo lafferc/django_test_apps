@@ -87,17 +87,22 @@ def calc_match_result(modeladmin, request, queryset):
     for tourn in tourns:
         tourn.update_table()
 
+def postpone(modeladmin, request, queryset):
+    for match in queryset:
+        match.postponed = True
+        match.save()
 
 class MatchAdmin(admin.ModelAdmin):
-    list_display = ('match_id', 'home_team', 'away_team', 'kick_off', 'score')
+    list_display = ('match_id', 'home_team', 'away_team', 'kick_off', 'postponed', 'score')
     list_filter = (
+        "postponed",
         ('tournament', admin.RelatedOnlyFieldListFilter),
     )
-    actions = [calc_match_result]
+    actions = [calc_match_result, postpone]
     fieldsets = (
         (None, {
             'fields': ('tournament', 'match_id', 'home_team', 'home_team_winner_of',
-                       'away_team', 'away_team_winner_of', 'kick_off', 'score')
+                       'away_team', 'away_team_winner_of', 'kick_off', 'postponed', 'score')
         }),
     )
     def get_readonly_fields(self, request, obj):
@@ -112,12 +117,16 @@ class MatchAdmin(admin.ModelAdmin):
             return self.fieldsets
         if not obj.home_team:
             return ( (None, { 'fields': ('tournament', 'match_id', 'home_team',
-                                         'home_team_winner_of', 'away_team', 'kick_off', 'score')
+                                         'home_team_winner_of', 'away_team',
+                                         'kick_off', 'postponed', 'score')
                             }),)
         if not obj.away_team:
-            return ( (None, { 'fields': ('tournament', 'match_id', 'home_team', 'away_team',
-                                         'away_team_winner_of', 'kick_off', 'score') }),)
-        return ( (None, { 'fields': ('tournament', 'match_id', 'home_team', 'away_team', 'kick_off', 'score') }),)
+            return ( (None, { 'fields': ('tournament', 'match_id', 'home_team',
+                                         'away_team', 'away_team_winner_of',
+                                         'kick_off', 'postponed', 'score') }),)
+        return ( (None, { 'fields': ('tournament', 'match_id', 'home_team',
+                                     'away_team', 'kick_off', 'postponed',
+                                     'score') }),)
 
 
 class PredictionAdmin(admin.ModelAdmin):

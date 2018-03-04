@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from django.db import IntegrityError
+from django.db.models import Q
 
 import decimal
 from .models import Tournament, Match, Prediction, Participant
@@ -39,9 +40,9 @@ def submit(request, tour_name):
     if not tournament.participants.filter(pk=request.user.pk).exists():
         return redirect("competition:join", tour_name=tour_name) 
 
-    fixture_list = Match.objects.filter(tournament=tournament,
-                                        kick_off__gt=timezone.now()
-                                        ).order_by('kick_off')
+    fixture_list = Match.objects.filter(
+            Q(postponed=True) | Q(kick_off__gt=timezone.now()),
+            tournament=tournament).order_by('kick_off')
 
     if request.method == 'POST':
         for match in fixture_list:
@@ -189,6 +190,7 @@ def results(request, tour_name):
                                         score__isnull=True,
                                         home_team__isnull=False,
                                         away_team__isnull=False,
+                                        postponed=False,
                                         ).order_by('kick_off')
 
     if request.method == 'POST':

@@ -152,6 +152,7 @@ class Match(models.Model):
     away_team = models.ForeignKey(Team, related_name='match_away_team', null=True, blank=True)
     away_team_winner_of = models.ForeignKey('self', blank=True, null=True, related_name='match_next_away')
     score = models.IntegerField(blank=True, null=True)
+    postponed = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         s = ''
@@ -213,6 +214,8 @@ class Match(models.Model):
             pass
 
     def has_started(self):
+        if self.postponed:
+            return False
         if self.kick_off > timezone.now():
             return False
         return True
@@ -257,7 +260,9 @@ class Prediction(models.Model):
 def add_draws(sender, instance, created, **kwargs):
     if created:
         g_logger.info("add_draw for %s", instance)
-        for match in Match.objects.filter(tournament=instance.tournament, kick_off__lt=timezone.now()):
+        for match in Match.objects.filter(tournament=instance.tournament,
+                                          kick_off__lt=timezone.now(),
+                                          postponed=False):
             try:
                 with transaction.atomic():
                     Prediction(user=instance.user, match=match, late=True).save()
