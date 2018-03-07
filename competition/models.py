@@ -188,7 +188,6 @@ class Match(models.Model):
         else:
             s += self.away_team.name
         return s
-            
 
     def check_predictions(self):
         for user in self.tournament.participants.all():
@@ -274,9 +273,13 @@ def add_draws(sender, instance, created, **kwargs):
                                           postponed=False):
             try:
                 with transaction.atomic():
-                    Prediction(user=instance.user, match=match, late=True).save()
+                    p = Prediction(user=instance.user, match=match, late=True)
+                    if match.score is not None:
+                        p.calc_score(match.score)
+                    p.save()
             except IntegrityError:
                 g_logger.exception("User(%s) has already predicted %s" % (instance.user, match))
+        instance.tournament.update_table()
 
 
 @receiver(post_save, sender=Match, dispatch_uid="cal_results_for_match")
@@ -287,7 +290,6 @@ def on_match_saved(sender, instance, created, **kwargs):
         instance.tournament.update_table()
         g_logger.info("checking for next round matches: %s", instance)
         instance.check_next_round_matches()
-
 
 
 @receiver(post_save, sender=Sport, dispatch_uid="handle_teams_csv_upload")

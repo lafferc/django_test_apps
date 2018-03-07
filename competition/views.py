@@ -161,7 +161,7 @@ def join(request, tour_name):
 
     if request.method == 'POST':
         try:
-            Participant(user=request.user, tournament=tournament).save()
+            Participant.objects.create(user=request.user, tournament=tournament)
         except IntegrityError:
             pass
         return redirect('competition:submit' , tour_name=tour_name)
