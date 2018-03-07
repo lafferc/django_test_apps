@@ -25,7 +25,7 @@ def index(request):
     context = {
         'site_name': current_site.name,
         'all_tournaments': Tournament.objects.all(),
-        'live_tournaments': Tournament.objects.filter(state=1),
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))
 
@@ -34,7 +34,7 @@ def index(request):
 def submit(request, tour_name):
     tournament = tournament_from_name(tour_name)
 
-    if tournament.state == 2:
+    if tournament.state == Tournament.FINISHED:
         return redirect("competition:table", tour_name=tour_name) 
 
     if not tournament.participants.filter(pk=request.user.pk).exists():
@@ -62,7 +62,7 @@ def submit(request, tour_name):
         'TOURNAMENT' : tournament,
         'fixture_list': fixture_list,
         'is_participant': True,
-        'live_tournaments': Tournament.objects.filter(state=1),
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))
 
@@ -72,7 +72,7 @@ def predictions(request, tour_name):
 
     is_participant = True
     if not tournament.participants.filter(pk=request.user.pk).exists():
-        if tournament.state != 2:
+        if tournament.state != Tournament.FINISHED:
             return redirect("competition:table", tour_name=tour_name)
         is_participant = False
 
@@ -120,7 +120,7 @@ def predictions(request, tour_name):
         'TOURNAMENT': tournament,
         'predictions': predictions,
         'is_participant': is_participant,
-        'live_tournaments': Tournament.objects.filter(state=1),
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))
 
@@ -131,7 +131,7 @@ def table(request, tour_name):
 
     is_participant = True
     if not tournament.participants.filter(pk=request.user.pk).exists():
-        if tournament.state != 2:
+        if tournament.state != Tournament.FINISHED:
             return redirect("competition:join", tour_name=tour_name) 
         is_participant = False
 
@@ -150,7 +150,7 @@ def table(request, tour_name):
         'leaderboard': leaderboard,
         'TOURNAMENT': tournament,
         'is_participant': is_participant,
-        'live_tournaments': Tournament.objects.filter(state=1),
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))
 
@@ -172,7 +172,7 @@ def join(request, tour_name):
         'site_name': current_site.name,
         'TOURNAMENT': tournament,
         'draw_bonus_value': tournament.bonus * tournament.draw_bonus,
-        'live_tournaments': Tournament.objects.filter(state=1),
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))
 
@@ -210,6 +210,6 @@ def results(request, tour_name):
         'TOURNAMENT': tournament,
         'fixture_list': fixture_list,
         'is_participant': is_participant,
-        'live_tournaments': Tournament.objects.filter(state=1),
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))

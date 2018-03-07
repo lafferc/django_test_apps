@@ -46,13 +46,22 @@ class Team(models.Model):
 
 
 class Tournament(models.Model):
+    PENDING = 0
+    ACTIVE = 1
+    FINISHED = 2
+    ARCHIVED = 3
+
     name = models.CharField(max_length=200, unique=True)
     participants = models.ManyToManyField(User, through="Participant")
     sport = models.ForeignKey(Sport)
     bonus = models.DecimalField(max_digits=5, decimal_places=2, default=2)
     draw_bonus = models.DecimalField(max_digits=5, decimal_places=2, default=1)
     late_get_bonus = models.BooleanField(default=False)
-    state = models.IntegerField(default=1, choices=((0, "Pending"), (1, "Active"), (2, "finished"), (3, "archived")))
+    state = models.IntegerField(default=ACTIVE,
+                                choices=((PENDING, "Pending"),
+                                         (ACTIVE, "Active"),
+                                         (FINISHED, "finished"),
+                                         (ARCHIVED, "archived")))
     winner = models.ForeignKey("Participant", null=True, blank=True, related_name='+')
     add_matches = models.FileField(null=True, blank=True)
     year = models.IntegerField(choices=YEAR_CHOICES, default=current_year)
@@ -84,11 +93,11 @@ class Tournament(models.Model):
             return Team.objects.get(sport=self.sport, code=name)
 
     def close(self, request):
-        if self.state != 1:
+        if self.state != Tournament.ACTIVE:
             return
         self.update_table()
         self.winner = Participant.objects.filter(tournament=self).order_by("score")[0]
-        self.state = 2
+        self.state = Tournament.FINISHED
 
         current_site = get_current_site(request)
         subject = "Thank you for participating in %s" % self.name
@@ -106,10 +115,10 @@ class Tournament(models.Model):
         self.save()
 
     def open(self, request):
-        if self.state != 0:
+        if self.state != Tournament.PENDING:
             g_logger.error("can only open tournaments that are pending")
             return
-        self.state = 1
+        self.state = Tournament.ACTIVE
 
         current_site = get_current_site(request)
         subject = "A new competition has started"

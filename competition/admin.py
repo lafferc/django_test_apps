@@ -46,11 +46,15 @@ def open_tournament(modeladmin, request, queryset):
     for tournament in queryset:
         tournament.open(request)
 
+def archive_tournament(modeladmin, request, queryset):
+    queryset.update(state=Tournament.ARCHIVED)
+
 
 class TournamentAdmin(admin.ModelAdmin):
     list_display = ('name',)
     inlines = ( ParticipantInline, )
-    actions = [pop_leaderboard, close_tournament, open_tournament]
+    actions = [pop_leaderboard, close_tournament,
+               open_tournament, archive_tournament]
     list_filter = (
         ('sport', admin.RelatedOnlyFieldListFilter),
         "state",
