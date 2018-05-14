@@ -82,6 +82,8 @@ class Tournament(models.Model):
                 if prediction.margin is not None:
                     total_margin += prediction.margin
                     num_predictions += 1
+            if num_predictions == 0:
+                continue
             participant.score = score
             participant.margin_per_match = (total_margin / num_predictions)
             participant.save()
