@@ -12,4 +12,4 @@ class NameChangeForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
        model = Profile
-       exclude = ('user', 'dob')
+       exclude = ('user', 'dob', 'test_features_enabled')

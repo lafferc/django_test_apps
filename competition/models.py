@@ -65,7 +65,7 @@ class Tournament(models.Model):
     winner = models.ForeignKey("Participant", null=True, blank=True, related_name='+')
     add_matches = models.FileField(null=True, blank=True)
     year = models.IntegerField(choices=YEAR_CHOICES, default=current_year)
-    display_margin_per_game = models.BooleanField(default=False)
+    test_features_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

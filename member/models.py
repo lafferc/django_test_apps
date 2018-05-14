@@ -22,6 +22,9 @@ class Profile(models.Model):
     email_on_new_competition = models.BooleanField(
             default=True,
             help_text="User will receive an email when new competitions are started")
+    test_features_enabled = models.BooleanField(
+            default=False,
+            help_text="This user can use features that are under test")
     
     def get_name(self):
         if self.display_name_format == 0:

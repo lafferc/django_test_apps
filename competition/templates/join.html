@@ -2,6 +2,10 @@
 
 {% block content %}
     <h3>Rules for {{TOURNAMENT.name}}</h3>
+{% if TOURNAMENT.test_features_enabled %}
+    <h2>WARNING: This Tournament has test features enabled</h2>
+    <p>You may experience issues, please report them to our Admins if you do.</p>
+{% endif %}
     <p>Predict the margin by which the home team will win e.g.
         <ul>
             <li>1 for a one {{TOURNAMENT.sport.scoring_unit}} win for the home team.</li>
@@ -14,16 +18,16 @@
     <p>Your prediction for each match is compared with the result. The difference is then added to your "score".</p>
     <p>The player with the lowest "score" at the end of the competition wins.</p>
     <p>You may choose decimal values for predicted margins.</p>
-    {% if TOURNAMENT.draw_bonus == 1 %}
+{% if TOURNAMENT.draw_bonus == 1 %}
     <p>If you correctly predict the outcome of the match (home win, away win or draw), you will
        receive a bonus of {{TOURNAMENT.bonus}} points which will be deducted from your "score".</p>
-    {% else %}
+{% else %}
     <p>If you correctly predict the outcome of the match (home win or away win), you will receive
        a bonus of {{TOURNAMENT.bonus}} points which will be deducted from your "score".</p>
     <p>This competition has a draw bonus multiplier of {{ TOURNAMENT.draw_bonus }}. If you
        correctly predict a draw {{ draw_bonus_value|floatformat:2 }} points will be deducted from
        your "score".</p>
-    {% endif %}
+{% endif %}
     <p>You cannot submit a prediction for a match after it has started. A draw will automatically added for any missed/late predictions. 
        These predictions will {% if TOURNAMENT.late_get_bonus %}still{% else %}<u>not</u>
        {% endif %} receive the bonus if the result is a draw. </p> 
