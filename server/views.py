@@ -20,8 +20,8 @@ def index(request):
     template = get_template('home.html')
     context = {
         'site_name': current_site.name,
-        'live_tournaments': Tournament.objects.filter(state=1),
-        'closed_tournaments': Tournament.objects.filter(state=2),
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'closed_tournaments': Tournament.objects.filter(state=Tournament.FINISHED),
     }
     return HttpResponse(template.render(context, request))
 
