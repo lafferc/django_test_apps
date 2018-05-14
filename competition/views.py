@@ -97,7 +97,7 @@ def predictions(request, tour_name):
             if other_user == request.user:
                 other_user = None
             else:
-                predictions = Prediction.objects.filter(user=other_user, match__tournament=tournament, match__kick_off__lt=timezone.now()).order_by('-match__kick_off')
+                predictions = Prediction.objects.filter(user=other_user, match__tournament=tournament, match__kick_off__lt=timezone.now(), match__postponed=False).order_by('-match__kick_off')
                 other_user = other_user.profile.get_name()
         except User.DoesNotExist:
             print("User(%s) tried to look at %s's predictions but '%s' does not exist"
