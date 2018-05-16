@@ -63,13 +63,14 @@ class TournamentAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
             'fields': ('name', 'sport', 'state', 'bonus', 'draw_bonus', 'late_get_bonus', 'year',
-                       'winner', 'add_matches', 'display_margin_per_game')
+                       'winner', 'add_matches', 'display_margin_per_game', 'test_features_enabled')
         }),
     )
 
     def get_readonly_fields(self, request, obj):
         if obj:
-            return ('sport', 'bonus', 'late_get_bonus', 'draw_bonus', 'winner', 'state', 'year')
+            return ('sport', 'bonus', 'late_get_bonus', 'draw_bonus',
+                    'winner', 'state', 'year', 'test_features_enabled')
         return ('winner')
 
     def get_fieldsets(self, request, obj):

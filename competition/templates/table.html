@@ -6,27 +6,18 @@
         <tr>
             <th>User</th>
             <th>Score</th>
-            {% if TOURNAMENT.display_margin_per_game %}
             <th>Average margin</th>
-            {% endif %}
         </tr>
     {% for username, name, score, avg_margin in leaderboard %}
         <tr>
             <td><a href="{% url 'competition:predictions' TOURNAMENT %}?user={{username}}">{{ name }}</a></td>
             <td>{{ score }}</td>
-            {% if TOURNAMENT.display_margin_per_game %}
             <td>{{ avg_margin }}</td>
-            {% endif %}
         </tr>
     {% endfor %}
     </table>
     <p>To view another user's predictions click on their name</p>
-    {% if TOURNAMENT.display_margin_per_game %}
     <p>The "average margin" is the average difference between the predicted margin and
        actual margin. This does not include bonuses.</p>
-    {% endif %}
-    
-{% else %}
-    <p>Rome wasn't build in a day, bear with me</p>
 {% endif %}
 {% endblock %}
