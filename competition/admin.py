@@ -63,7 +63,7 @@ class TournamentAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
             'fields': ('name', 'sport', 'state', 'bonus', 'draw_bonus', 'late_get_bonus', 'year',
-                       'winner', 'add_matches', 'display_margin_per_game', 'test_features_enabled')
+                       'winner', 'add_matches', 'test_features_enabled')
         }),
     )
 
@@ -74,7 +74,7 @@ class TournamentAdmin(admin.ModelAdmin):
         return ('winner')
 
     def get_fieldsets(self, request, obj):
-        if request.user.has_perm('Tournament.csv_upload') and (not obj or obj.state not in [2, 3]):
+        if request.user.has_perm('Tournament.csv_upload') and (not obj or obj.state not in [Tournament.FINISHED, Tournament.ARCHIVED]):
             return self.fieldsets
         return ((None, {'fields': ('name', 'sport', 'state', 'bonus', 'draw_bonus',
                                    'late_get_bonus', 'year', 'winner')}),)
