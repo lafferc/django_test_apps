@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import IntegrityError
 from django.db.models import Q
 
@@ -54,6 +55,12 @@ def submit(request, tour_name):
         if prediction.match in fixture_list:
             fixture_list = fixture_list.exclude(pk=prediction.match.pk)
 
+    paginator = Paginator(fixture_list, 10)
+    page = request.GET.get('page')
+    try:
+        fixture_list = paginator.page(page)
+    except PageNotAnInteger, EmptyPage:
+        fixture_list = paginator.page(1)
 
     current_site = get_current_site(request)
     template = loader.get_template('submit.html')
@@ -135,8 +142,16 @@ def table(request, tour_name):
             return redirect("competition:join", tour_name=tour_name) 
         is_participant = False
 
+    participant_list = Participant.objects.filter(tournament=tournament).order_by('score')
+    paginator = Paginator(participant_list, 20)
+    page = request.GET.get('page')
+    try:
+        participants = paginator.page(page)
+    except PageNotAnInteger, EmptyPage:
+        participants = paginator.page(1)
+
     leaderboard = []
-    for participant in Participant.objects.filter(tournament=tournament).order_by('score'):
+    for participant in participants:
         leaderboard.append((participant.user.username,
                             participant.user.profile.get_name(),
                             participant.score,
@@ -151,6 +166,7 @@ def table(request, tour_name):
         'TOURNAMENT': tournament,
         'is_participant': is_participant,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'participants': participants,
     }
     return HttpResponse(template.render(context, request))
 
