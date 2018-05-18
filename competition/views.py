@@ -213,3 +213,27 @@ def results(request, tour_name):
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))
+
+
+@login_required
+def rules(request, tour_name):
+    tournament = tournament_from_name(tour_name)
+
+    is_participant = True
+    if not tournament.participants.filter(pk=request.user.pk).exists():
+        if tournament.state == Tournament.ACTIVE:
+            return redirect("competition:join", tour_name=tour_name) 
+        is_participant = False
+
+    current_site = get_current_site(request)
+    template = loader.get_template('display_rules.html')
+    context = {
+        'site_name': current_site.name,
+        'TOURNAMENT': tournament,
+        'draw_bonus_value': tournament.bonus * tournament.draw_bonus,
+        'is_participant': is_participant,
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+    }
+    return HttpResponse(template.render(context, request))
+
+
