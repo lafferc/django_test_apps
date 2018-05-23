@@ -148,7 +148,7 @@ class Participant(models.Model):
     margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
 
     def __str__(self):
-        return "%s" % self.user
+        return "%s:%s" % (self.tournament, self.user)
 
     class Meta:
         unique_together = ('tournament', 'user',)

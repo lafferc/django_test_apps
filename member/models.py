@@ -1,9 +1,12 @@
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import logging
 import smtplib
+import string
+import random
+from competition.models import Tournament, Participant
 
 g_logger = logging.getLogger(__name__)
 
@@ -58,3 +61,29 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
+
+
+class Organisation(models.Model):
+    name = models.CharField(max_length=50, blank=True)
+    contact = models.CharField(max_length=50, blank=True)
+
+
+class Competition(models.Model):
+    organisation = models.ForeignKey(Organisation)
+    tournament = models.ForeignKey(Tournament)
+    participants = models.ManyToManyField(Participant)
+
+    class Meta:
+        unique_together = ('tournament', 'organisation',)
+
+
+class Ticket(models.Model):
+    competition = models.ForeignKey(Competition)
+    token = models.CharField(max_length=10, unique=True, blank=True)
+    used = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            all_chars = string.ascii_uppercase + string.digits
+            self.token = ''.join(random.SystemRandom().choice(all_chars) for _ in range(2))
+        super(Ticket, self).save(*args, **kwargs)
