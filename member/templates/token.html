@@ -1,0 +1,11 @@
+{% extends "member_base.html" %}
+
+{% block content %}
+    <h1>Enter Competition Code</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="token">
+        <button type="submit">Submit</button>
+    </form>
+
+{% endblock %}

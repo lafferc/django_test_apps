@@ -65,7 +65,7 @@ class Tournament(models.Model):
     winner = models.ForeignKey("Participant", null=True, blank=True, related_name='+')
     add_matches = models.FileField(null=True, blank=True)
     year = models.IntegerField(choices=YEAR_CHOICES, default=current_year)
-    display_margin_per_game = models.BooleanField(default=False)
+    test_features_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -148,7 +148,10 @@ class Participant(models.Model):
     margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
 
     def __str__(self):
-        return "%s" % self.user
+        return "%s:%s" % (self.tournament, self.user)
+
+    def get_name(self):
+        return self.user.profile.get_name()
 
     class Meta:
         unique_together = ('tournament', 'user',)

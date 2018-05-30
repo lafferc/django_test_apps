@@ -3,10 +3,15 @@ from django.http import HttpResponse, Http404
 from django.template import loader
 from django.contrib.auth.decorators import login_required, permission_required
 from django.utils import timezone
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
-from .models import Profile
+from .models import Profile, Ticket
 from .forms import ProfileForm, NameChangeForm
+from competition.models import Participant
+import logging
+
+g_logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -36,3 +41,35 @@ def profile(request):
     return HttpResponse(template.render(context, request))
 
 
+@login_required
+def use_token(request):
+    if not request.user.profile.test_features_enabled:
+        raise Http404("User does not have test features enabled")
+    if request.method == 'POST':
+        try:
+            token = request.POST['token'].upper()
+            ticket = Ticket.objects.get(used=False, token=token)
+            ticket.used = True
+            g_logger.debug("Found ticket for token:%s" % token)
+            tourn = ticket.competition.tournament
+            try:
+                participant = Participant.objects.get(user=request.user,
+                                                      tournament=tourn)
+            except Participant.DoesNotExist:
+                participant = Participant(user=request.user,
+                                          tournament=tourn)
+                participant.save()
+            ticket.competition.participants.add(participant)
+            ticket.save()
+            return redirect('competition:org_table',
+                            tour_name=tourn.name,
+                            org_name=ticket.competition.organisation.name)
+        except Exception:
+            g_logger.exception("Failed to process token")
+
+    template = loader.get_template('token.html')
+    current_site = get_current_site(request)
+    context = {
+        'site_name': current_site.name,
+    }
+    return HttpResponse(template.render(context, request))

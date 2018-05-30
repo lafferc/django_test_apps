@@ -5,11 +5,13 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import IntegrityError
 from django.db.models import Q
 
 import decimal
 from .models import Tournament, Match, Prediction, Participant
+from member.models import Competition
 
 
 def tournament_from_name(name):
@@ -54,6 +56,12 @@ def submit(request, tour_name):
         if prediction.match in fixture_list:
             fixture_list = fixture_list.exclude(pk=prediction.match.pk)
 
+    paginator = Paginator(fixture_list, 10)
+    page = request.GET.get('page')
+    try:
+        fixture_list = paginator.page(page)
+    except PageNotAnInteger, EmptyPage:
+        fixture_list = paginator.page(1)
 
     current_site = get_current_site(request)
     template = loader.get_template('submit.html')
@@ -128,15 +136,29 @@ def predictions(request, tour_name):
 @login_required
 def table(request, tour_name):
     tournament = tournament_from_name(tour_name)
-
-    is_participant = True
-    if not tournament.participants.filter(pk=request.user.pk).exists():
+    try:
+        participant = Participant.objects.get(tournament=tournament, user=request.user)
+        is_participant = True
+    except Participant.DoesNotExist:
         if tournament.state != Tournament.FINISHED:
             return redirect("competition:join", tour_name=tour_name) 
         is_participant = False
 
+    if is_participant and request.user.profile.test_features_enabled:
+        competitions = participant.competition_set.all()
+    else:
+        competitions = None
+
+    participant_list = Participant.objects.filter(tournament=tournament).order_by('score')
+    paginator = Paginator(participant_list, 20)
+    page = request.GET.get('page')
+    try:
+        participants = paginator.page(page)
+    except PageNotAnInteger, EmptyPage:
+        participants = paginator.page(1)
+
     leaderboard = []
-    for participant in Participant.objects.filter(tournament=tournament).order_by('score'):
+    for participant in participants:
         leaderboard.append((participant.user.username,
                             participant.user.profile.get_name(),
                             participant.score,
@@ -151,6 +173,44 @@ def table(request, tour_name):
         'TOURNAMENT': tournament,
         'is_participant': is_participant,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'participants': participants,
+	    'competitions': competitions,
+    }
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def org_table(request, tour_name, org_name):
+    tournament = tournament_from_name(tour_name)
+    if not request.user.profile.test_features_enabled:
+        raise Http404("User does not have test features enabled")
+    try:
+        participant = Participant.objects.get(tournament=tournament, user=request.user)
+        comp =  participant.competition_set.get(organisation__name=org_name)
+        competitions = participant.competition_set.all().exclude(pk=comp.pk)
+        competitions = [comp] + [c for c in competitions]
+    except Competition.DoesNotExist:
+        raise Http404("Organisation does not exist")
+    except Participant.DoesNotExist:
+        raise Http404()
+
+    participant_list = comp.participants.order_by('score')
+    paginator = Paginator(participant_list, 20)
+    page = request.GET.get('page')
+    try:
+        participants = paginator.page(page)
+    except PageNotAnInteger, EmptyPage:
+        participants = paginator.page(1)
+
+    current_site = get_current_site(request)
+    template = loader.get_template('org_table.html')
+    context = {
+        'site_name': current_site.name,
+        'TOURNAMENT': tournament,
+        'is_participant': True,
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'participants': participants,
+	    'competitions': competitions,
     }
     return HttpResponse(template.render(context, request))
 

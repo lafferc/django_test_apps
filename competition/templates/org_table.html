@@ -1,43 +1,41 @@
 {% extends "competition_base.html" %}
 
 {% block content %}
-{% if leaderboard %}
-    {% if competitions and user.profile.test_features_enabled %}
+{% if competitions and user.profile.test_features_enabled %}
     <select onchange="location = this.options[this.selectedIndex].value;">
-        <option>Click to view sub-competitions</option>
-        {% for competition in competitions %}
+    {% for competition in competitions %}
         <option value="{% url 'competition:org_table' TOURNAMENT competition %}">{{ competition }}</option>
-        {% endfor %}
+    {% endfor %}
+        <option value="{% url 'competition:table' TOURNAMENT %}">Back to main leaderboard</option>
     </select> 
-    {% endif %}
+{% endif %}
     <table style="width:auto" border="1">
         <tr>
             <th title="To view another user's predictions click on their name">User</th>
             <th title="The user with the lowest score is winning">Score</th>
             <th title='The "average margin" is the average difference between the predicted margin and actual margin. This does not include bonuses.'>Average margin</th>
         </tr>
-    {% for username, name, score, avg_margin in leaderboard %}
+{% for participant in  participants %}
         <tr>
-            <td><a href="{% url 'competition:predictions' TOURNAMENT %}?user={{username}}">{{ name }}</a></td>
-            <td>{{ score }}</td>
-            <td>{{ avg_margin }}</td>
+            <td><a href="{% url 'competition:predictions' TOURNAMENT %}?user={{participant.user.username}}">{{ participant.get_name }}</a></td>
+            <td>{{ participant.score }}</td>
+            <td>{{ participant.margin_per_match }}</td>
         </tr>
-    {% endfor %}
+{% endfor %}
     </table>
     <div class="pagination">
         <span class="step-links">
-            {% if participants.has_previous %}
+{% if participants.has_previous %}
                 <a href="?page={{ participants.previous_page_number }}">previous</a>
-            {% endif %}
+{% endif %}
     
             <span class="current">
                 Page {{ participants.number }} of {{ participants.paginator.num_pages }}.
             </span>
     
-            {% if participants.has_next %}
+{% if participants.has_next %}
                 <a href="?page={{ participants.next_page_number }}">next</a>
-            {% endif %}
+{% endif %}
         </span>
     </div>
-{% endif %}
 {% endblock %}
