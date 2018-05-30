@@ -5,10 +5,10 @@
     <p>username:{{ user }}</p>
     <p>Display name:{{ profile.get_name }}</p>
     <form method="post">
-    {% csrf_token %}
-    {{ user_form.as_p }}
-    {{ profile_form.as_p }}
-    <button type="submit">Save changes</button>
+        {% csrf_token %}
+        {{ user_form.as_p }}
+        {{ profile_form.as_p }}
+        <button type="submit">Save changes</button>
     </form>
 
 {% endblock %}

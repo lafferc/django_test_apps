@@ -34,7 +34,7 @@
             <ul data-role="listview">
                 <li data-icon="delete"><a href="#" data-rel="close">Close menu</a></li>
                 <li data-icon="home"><a href="{% url 'index' %}">Home</a></li>
- {% if user.is_authenticated %}
+{% if user.is_authenticated %}
                 <li data-icon="user"><a href="{% url 'member:profile' %}">Profile</a></li>
                 <li><a href="{% url 'password_change' %}">Change Password</a></li>
 {% else %}
@@ -43,7 +43,10 @@
 {% endif %}
 {% block menu %}
 {% endblock %}
- {% if user.is_authenticated %}
+{% if user.is_authenticated %}
+    {% if user.profile.test_features_enabled %}
+                <li><a href="{% url 'member:use_token' %}">Enter Competition Code</a></li>
+    {% endif %}
                 <li data-icon="lock"><a href="{% url 'logout' %}">Logout</a></li>
 {% endif %}
             </ul>

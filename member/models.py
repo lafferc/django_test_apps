@@ -64,14 +64,21 @@ def save_user_profile(sender, instance, **kwargs):
 
 
 class Organisation(models.Model):
-    name = models.CharField(max_length=50, blank=True)
+    name = models.CharField(max_length=50, unique=True)
     contact = models.CharField(max_length=50, blank=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Competition(models.Model):
     organisation = models.ForeignKey(Organisation)
     tournament = models.ForeignKey(Tournament)
     participants = models.ManyToManyField(Participant)
+    token_len = models.PositiveIntegerField(default=6)
+
+    def __str__(self):
+        return self.organisation.name
 
     class Meta:
         unique_together = ('tournament', 'organisation',)
@@ -85,5 +92,6 @@ class Ticket(models.Model):
     def save(self, *args, **kwargs):
         if self.pk is None:
             all_chars = string.ascii_uppercase + string.digits
-            self.token = ''.join(random.SystemRandom().choice(all_chars) for _ in range(2))
+            n = self.competition.token_len
+            self.token = ''.join(random.SystemRandom().choice(all_chars) for _ in range(n))
         super(Ticket, self).save(*args, **kwargs)

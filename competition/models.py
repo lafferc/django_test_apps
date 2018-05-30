@@ -150,6 +150,9 @@ class Participant(models.Model):
     def __str__(self):
         return "%s:%s" % (self.tournament, self.user)
 
+    def get_name(self):
+        return self.user.profile.get_name()
+
     class Meta:
         unique_together = ('tournament', 'user',)
 
