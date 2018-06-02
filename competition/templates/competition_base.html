@@ -9,6 +9,7 @@
 {% if TOURNAMENT %}
 <div data-role="navbar">
     <h2 align="center">{{ TOURNAMENT.name }}</h2>
+    {% if is_participant or perms.competition.change_match or TOURNAMENT.state != 1 %}
     <ul>
     {% if is_participant %}
         {% if TOURNAMENT.state == 1 %}
@@ -23,6 +24,7 @@
         <li><a href="{% url 'competition:table' TOURNAMENT.name %}">Leaderboard</a></li>
     {% endif %}
     </ul>
+    {% endif %}
 </div>
 {% endif %}
 
