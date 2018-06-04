@@ -273,3 +273,36 @@ def results(request, tour_name):
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))
+
+@login_required
+def match(request, match_pk):
+    try:
+        match = Match.objects.get(pk=match_pk)
+    except Match.DoesNotExist:
+        raise Http404("Match does not exist")
+
+    if not match.tournament.participants.filter(pk=request.user.pk).exists():
+        raise Http404("User is not a Participant")
+
+    if match.has_started():
+        paginator = Paginator(match.prediction_set.all(), 20)
+        try:
+            predictions = paginator.page(request.GET.get('page'))
+        except PageNotAnInteger, EmptyPage:
+            predictions = paginator.page(1)
+    else:
+        predictions = None
+
+
+    current_site = get_current_site(request)
+    template = loader.get_template('match.html')
+    context = {
+        'site_name': current_site.name,
+        'TOURNAMENT': match.tournament,
+        'is_participant': True,
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'predictions': predictions,
+        'match': match,
+    }
+    return HttpResponse(template.render(context, request))
+

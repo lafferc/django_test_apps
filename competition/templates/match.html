@@ -1,0 +1,62 @@
+{% extends "competition_base.html" %}
+
+{% block content %}
+<h2>{{ match }}</h2>
+Match ID: {{match.match_id}}
+<br/>
+{% if match.home_team %}
+Home Team: {{ match.home_team }} 
+{% else %}
+Home Team: Winner of {{ match.home_team_winner_of }}
+{% endif %}
+<br/>
+{% if match.away_team %}
+Away Team: {{ match.away_team }} 
+{% else %}
+Away Team: Winner of {{ match.away_team_winner_of }}
+{% endif %}
+<br/>
+{{ match.tournament.sport.match_start_verb }}: {{ match.kick_off }}
+<br/>
+{% if match.score %}
+Result: {{ match.score }}
+<br/>
+{% endif %}
+<br/>
+
+{% if predictions %}
+    <table style="width:auto" border="1">
+        <tr>
+            <th>User</th>
+            <th>Prediction</th>
+    {% if match.score %}
+            <th>Score</th>
+    {% endif %}
+        </tr>
+    {% for prediction in predictions %}
+        <tr>
+            <td>{{ prediction.user.profile.get_name }}</td>
+            <td>{{ prediction.prediction }}</td>
+        {% if match.score %}
+            <td>{{ prediction.score }}</td>
+        {% endif %}
+        </tr>
+    {% endfor %}
+    </table>
+    <div class="pagination">
+        <span class="step-links">
+    {% if predictions.has_previous %}
+                <a href="?page={{ predictions.previous_page_number }}">previous</a>
+    {% endif %}
+    
+            <span class="current">
+                Page {{ predictions.number }} of {{ predictions.paginator.num_pages }}.
+            </span>
+    
+    {% if predictions.has_next %}
+                <a href="?page={{ predictions.next_page_number }}">next</a>
+    {% endif %}
+        </span>
+    </div>
+{% endif %}
+{% endblock %}

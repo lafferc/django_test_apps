@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     url(r'^$', views.index, name='index'),
+    url(r'^match/(?P<match_pk>[0-9]+)/$', views.match, name='match'),
     url(r'^(?P<tour_name>[^/]+)/$', views.submit, name='submit'),
     url(r'^(?P<tour_name>[^/]+)/predictions/$', views.predictions, name='predictions'),
     url(r'^(?P<tour_name>[^/]+)/table/$', views.table, name='table'),
