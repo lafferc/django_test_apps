@@ -16,7 +16,12 @@ Away Team: {{ match.away_team }}
 Away Team: Winner of {{ match.away_team_winner_of }}
 {% endif %}
 <br/>
-{{ match.tournament.sport.match_start_verb }}: {{ match.kick_off }}
+{{ match.tournament.sport.match_start_verb }}:
+{% if match.postponed %}
+    POSTPONED
+{% else %}
+<span class="toLocalTime">{{ match.kick_off|date:"Y/m/d H:i:s" }}</span>(<span id="tz_str"></span>)
+{% endif %}
 <br/>
 {% if match.score %}
 Result: {{ match.score }}

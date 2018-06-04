@@ -1,27 +1,9 @@
 {% extends "competition_base.html" %}
 
-{% block sub_head %}
-<script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
-<script>
-$(function() {
-    var x = document.getElementsByClassName("toLocalTime");
-    var offset = new Date().getTimezoneOffset()*60*1000 ;
-    for (i = 0; i < x.length; ++i) {
-        var d = new Date(0);
-        var t = Date.parse(x[i].innerHTML);
-        d.setUTCMilliseconds(t - offset);
-        x[i].innerHTML = d.toString().replace(/GMT.*/g,"");
-    }
-    var tz = document.getElementById("tz_str");
-    tz.innerHTML = new Date().toString().match(/\(([A-Za-z\s].*)\)/)[1];
-});
-</script>
-{% endblock %}
-
 {% block content %}
 {% if fixture_list %}
     <form method="post">{% csrf_token %}
-        <p>Note: all times are in local time (<a id="tz_str"></a>)</p>
+        <p>Note: all times are in local time (<span id="tz_str"></span>)</p>
         <p>Only predictions that are filled in will be sent to the server, leave the box blank if you want to fill it in later</p>
         <p>Any prediction submitted after {{ TOURNAMENT.sport.match_start_verb|lower }} will not be counted.</p>
         <table style="max-width:100% width:auto" border="1">
@@ -35,7 +17,7 @@ $(function() {
             <tr>
                 <td>{{ match.match_id }}</td>
                 <td><input type="text" name="{{match.pk}}"></td>
-                <td>{{ match }}</td>
+                <td><a href="{% url 'competition:match' match.pk %}">{{ match }}</a></td>
             {% if match.postponed %}
                 <td>POSTPONED</td>
             {% else %}

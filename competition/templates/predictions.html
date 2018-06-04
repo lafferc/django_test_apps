@@ -27,7 +27,11 @@
     {% for prediction in predictions %}
         <tr>
             <td>{{ prediction.match.match_id }}</td>
+        {% if is_participant %}
+            <td><a href="{% url 'competition:match' prediction.match.pk %}">{{ prediction.match }}</a></td>
+        {% else %}
             <td>{{ prediction.match }}</td>
+        {% endif %}
         {% if not other_user and not prediction.match.has_started %}
             <td id="prediction_score_row_{{ prediction.id }}">
                     {{ prediction.prediction }}
