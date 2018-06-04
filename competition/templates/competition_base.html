@@ -29,6 +29,7 @@ $(function() {
 {% if TOURNAMENT %}
 <div data-role="navbar">
     <h2 align="center">{{ TOURNAMENT.name }}</h2>
+    {% if is_participant or perms.competition.change_match or TOURNAMENT.state != 1 %}
     <ul>
     {% if is_participant %}
         {% if TOURNAMENT.state == 1 %}
@@ -39,14 +40,18 @@ $(function() {
     {% if TOURNAMENT.state == 1 and perms.competition.change_match %}
         <li><a href="{% url 'competition:results' TOURNAMENT.name %}">Submit Results</a></li>
     {% endif %}
+    {% if TOURNAMENT.state != 1 or is_participant %}
         <li><a href="{% url 'competition:table' TOURNAMENT.name %}">Leaderboard</a></li>
+    {% endif %}
     </ul>
+    {% endif %}
 </div>
 {% endif %}
 
 {% endblock %}
 
 {% block menu %}
+                <li><a href="{% url 'competition:rules' TOURNAMENT.name %}">Rules</a></li>
     {% for tournament in live_tournaments %}
                 <li><a href="{% url 'competition:submit' tournament.name %}">{{ tournament.name }}</a></li>
     {% endfor %}

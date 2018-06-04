@@ -11,4 +11,5 @@ urlpatterns = [
     url(r'^(?P<tour_name>[^/]+)/table/(?P<org_name>[^/]+)/$', views.org_table, name='org_table'),
     url(r'^(?P<tour_name>[^/]+)/join/$', views.join, name='join'),
     url(r'^(?P<tour_name>[^/]+)/results/$', views.results, name='results'),
+    url(r'^(?P<tour_name>[^/]+)/rules/$', views.rules, name='rules'),
 ]
