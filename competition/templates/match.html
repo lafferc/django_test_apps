@@ -23,7 +23,7 @@ Away Team: Winner of {{ match.away_team_winner_of }}
 <span class="toLocalTime">{{ match.kick_off|date:"Y/m/d H:i:s" }}</span>(<span id="tz_str"></span>)
 {% endif %}
 <br/>
-{% if match.score %}
+{% if match.score != None %}
 Result: {{ match.score }}
 <br/>
 {% endif %}
@@ -34,7 +34,7 @@ Result: {{ match.score }}
         <tr>
             <th>User</th>
             <th>Prediction</th>
-    {% if match.score %}
+    {% if match.score != None %}
             <th>Score</th>
     {% endif %}
         </tr>
@@ -42,7 +42,7 @@ Result: {{ match.score }}
         <tr>
             <td>{{ prediction.user.profile.get_name }}</td>
             <td>{{ prediction.prediction }}</td>
-        {% if match.score %}
+        {% if match.score != None %}
             <td>{{ prediction.score }}</td>
         {% endif %}
         </tr>
