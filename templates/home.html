@@ -10,6 +10,14 @@
         {% endfor %}
         </ul>
     {% endif %}
+    {% if matches %}
+    <h3>Today's Matches</h3>
+        <ul>
+        {% for match in matches %}
+            <li><a href="{% url 'competition:match' match.pk %}">{{ match }}</a></li>
+        {% endfor %}
+        </ul>
+    {% endif %}
     {% if closed_tournaments %}
     <h3>Previous competitions</h3>
         <ul>

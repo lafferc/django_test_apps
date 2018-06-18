@@ -8,8 +8,10 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+import datetime
+from itertools import chain
 
-from competition.models import Tournament
+from competition.models import Tournament, Match
 from .forms import SignUpForm
 from .tokens import account_activation_token
 
@@ -18,10 +20,25 @@ from .tokens import account_activation_token
 def index(request):
     current_site = get_current_site(request)
     template = get_template('home.html')
+    live_tournaments = Tournament.objects.filter(state=Tournament.ACTIVE)
+    searchs = []
+    today = datetime.date.today()
+    for tourn in live_tournaments:
+        if not tourn.participants.filter(pk=request.user.pk).exists():
+            continue
+        searchs.append(Match.objects.filter(tournament=tourn, 
+                                            kick_off__year=today.year, 
+                                            kick_off__month=today.month, 
+                                            kick_off__day=today.day))
+    matches = sorted(
+                chain(*searchs),
+                    key=lambda instance: instance.kick_off)
+
     context = {
         'site_name': current_site.name,
-        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'live_tournaments': live_tournaments,
         'closed_tournaments': Tournament.objects.filter(state=Tournament.FINISHED),
+        'matches': matches,
     }
     return HttpResponse(template.render(context, request))
 
