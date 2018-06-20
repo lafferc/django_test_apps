@@ -2,7 +2,7 @@ import re
 import csv
 import datetime
 
-g_summary_re = "(\w+) [vV]s? (\w+) .*"
+g_summary_re = "([\w ]+) [vV]s? ([\w ]+).*"
 
 def parse_events(file_name, debug=False):
     with open(file_name) as file:
@@ -24,19 +24,21 @@ def parse_events(file_name, debug=False):
                 event = None
             else:
               try:
-                  key, value = line.split(':')
+                  key, value = line.split(':', 1)
                   event[key] = value
               except ValueError:
                   continue
         return events
     
 
-def events_to_csv(events, file_name):
+def events_to_csv(events, file_name, summary_re=g_summary_re):
     header = ["match_id", "home_team", "away_team", "kick_off"]
     rows = []
     curr_id = 1
     for event in events:
-        s = re.search(g_summary_re, event["SUMMARY"])
+        s = re.search(summary_re, event["SUMMARY"])
+        if s is None:
+            continue
         row = {
            'match_id': curr_id,
            'home_team': s.group(1),
@@ -55,11 +57,11 @@ def events_to_csv(events, file_name):
                 writer.writerow(row)
 
 
-def events_to_teams(events, file_name):
+def events_to_teams(events, file_name, summary_re=g_summary_re):
     header = ["name", "code"]
     teams = []
     for event in events:
-        s = re.search(g_summary_re, event["SUMMARY"])
+        s = re.search(summary_re, event["SUMMARY"])
         if s is None:
             continue
         if s.group(1) not in teams:
@@ -86,11 +88,16 @@ if __name__ == "__main__" :
     parser.add_argument("--teams",
                         default=False,
                         action="store_true")
+    parser.add_argument("--regx",
+                        default=g_summary_re)
+
     args = parser.parse_args()
   
+    if args.debug:
+        print(args.regx)
     events = parse_events(args.in_filename, args.debug)
 
     if args.teams:
-        events_to_teams(events, args.out_filename)
+        events_to_teams(events, args.out_filename, args.regx)
     else:
-        events_to_csv(events, args.out_filename)
+        events_to_csv(events, args.out_filename, args.regx)
