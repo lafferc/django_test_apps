@@ -67,6 +67,11 @@ class Tournament(models.Model):
     year = models.IntegerField(choices=YEAR_CHOICES, default=current_year)
     test_features_enabled = models.BooleanField(default=False)
 
+    def is_closed(self):
+        if self.state in [self.FINISHED, self.ARCHIVED]:
+            return True
+        return False
+
     def __str__(self):
         return self.name
 

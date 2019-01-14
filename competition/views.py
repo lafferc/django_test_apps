@@ -36,7 +36,7 @@ def index(request):
 def submit(request, tour_name):
     tournament = tournament_from_name(tour_name)
 
-    if tournament.state == Tournament.FINISHED:
+    if tournament.is_closed():
         return redirect("competition:table", tour_name=tour_name) 
 
     if not tournament.participants.filter(pk=request.user.pk).exists():
@@ -80,7 +80,7 @@ def predictions(request, tour_name):
 
     is_participant = True
     if not tournament.participants.filter(pk=request.user.pk).exists():
-        if tournament.state != Tournament.FINISHED:
+        if not tournament.is_closed():
             return redirect("competition:table", tour_name=tour_name)
         is_participant = False
 
@@ -140,7 +140,7 @@ def table(request, tour_name):
         participant = Participant.objects.get(tournament=tournament, user=request.user)
         is_participant = True
     except Participant.DoesNotExist:
-        if tournament.state != Tournament.FINISHED:
+        if not tournament.is_closed():
             return redirect("competition:join", tour_name=tour_name) 
         is_participant = False
 
@@ -218,6 +218,9 @@ def org_table(request, tour_name, org_name):
 @login_required
 def join(request, tour_name):
     tournament = tournament_from_name(tour_name)
+
+    if tournament.is_closed():
+        return redirect("competition:table", tour_name=tour_name) 
 
     if request.method == 'POST':
         try:
