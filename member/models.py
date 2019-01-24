@@ -41,15 +41,21 @@ class Profile(models.Model):
             return "user_%d" % self.user.pk
 
     def email_user(self, subject, message, new_comp=False):
+        if not self.user.email:
+            g_logger.warn("User %s doesn't have a valid email" % self.get_name())
+            return False
         if not self.can_receive_emails:
-            return
+            return False
         if new_comp and not self.email_on_new_competition:
-            return
+            return False
         try:
             self.user.email_user(subject, message)
+            return True
         except smtplib.SMTPRecipientsRefused:
             g_logger.error("Recipient Refused:'%s' (user: %s)", 
                            self.user.email, self.user)
+            return False
+
     def __str__(self):
         return self.user.username
 

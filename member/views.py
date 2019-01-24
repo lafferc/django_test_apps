@@ -4,6 +4,7 @@ from django.template import loader
 from django.contrib.auth.decorators import login_required, permission_required
 from django.utils import timezone
 from django.contrib import messages
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from .models import Profile, Ticket
@@ -72,4 +73,52 @@ def use_token(request):
     context = {
         'site_name': current_site.name,
     }
+    return HttpResponse(template.render(context, request))
+
+@user_passes_test(lambda user: user.is_superuser)
+def announcement(request):
+    current_site = get_current_site(request)
+    if request.method == 'POST':
+        subject = ""
+        body = ""
+        try:
+            subject = request.POST["subject"]
+            body = request.POST["message"]
+            test_flag = request.POST["test_email"]  == "true"
+        except KeyError:
+            test_flag = False
+
+        if not len(body) or not len(subject):
+            raise Http404("Subject or body missing")
+
+        if test_flag:
+            user_list = [request.user]
+        else:
+            user_list = User.objects.all()
+
+        sent_to = 0
+        for user in user_list:
+            message = loader.render_to_string('announcement_email.html', {
+                'user': user,
+                'body': body,
+                'site_name': current_site.name,
+                'site_domain': current_site.name,
+                'protocol': 'https' if request.is_secure() else 'http',
+            })
+            if user.profile.email_user(subject, message):
+                sent_to += 1
+
+        template = loader.get_template('announcement_sent.html')
+        context = {
+            'site_name': current_site.name,
+            'user_list_len': sent_to,
+        }
+
+        return HttpResponse(template.render(context, request))
+
+    template = loader.get_template('announcement.html')
+    context = {
+        'site_name': current_site.name,
+    }
+
     return HttpResponse(template.render(context, request))

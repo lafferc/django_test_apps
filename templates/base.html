@@ -41,6 +41,9 @@
                 <li><a href="{% url 'login' %}">Login</a></li>
                 <li><a href="{% url 'signup' %}">Sign up</a></li>
 {% endif %}
+{% if user.is_superuser %}
+                <li><a href="{% url 'member:announcement' %}">Make Announcement</a></li>
+{% endif %}
 {% block menu %}
 {% endblock %}
 {% if user.is_authenticated %}

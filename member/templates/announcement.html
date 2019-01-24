@@ -1,0 +1,13 @@
+{% extends "member_base.html" %}
+
+{% block content %}
+  <h2>Send Announcement to all Users</h2>
+  <form method="post">
+    {% csrf_token %}
+    <input type="text" name="subject">
+    <textarea name="message" rows="10" cols="50" /></textarea>
+    <br>
+    <input type="checkbox" name="test_email" value="true"><p style="float:left">Test email (Send only to me)</p>
+    <button type="submit">Send</button>
+  </form>
+{% endblock %}
