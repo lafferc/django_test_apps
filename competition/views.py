@@ -48,9 +48,10 @@ def submit(request, tour_name):
 
     if request.method == 'POST':
         for match in fixture_list:
-            if str(match.pk) in request.POST:
-                if request.POST[str(match.pk)]:
-                    Prediction(user=request.user, match=match, prediction=float(request.POST[str(match.pk)])).save()
+            try:
+                Prediction(user=request.user, match=match, prediction=float(request.POST[str(match.pk)])).save()
+            except (ValueError, KeyError):
+                continue
 
     for prediction in Prediction.objects.filter(user=request.user):
         if prediction.match in fixture_list:
@@ -60,7 +61,7 @@ def submit(request, tour_name):
     page = request.GET.get('page')
     try:
         fixture_list = paginator.page(page)
-    except PageNotAnInteger, EmptyPage:
+    except (PageNotAnInteger, EmptyPage):
         fixture_list = paginator.page(1)
 
     current_site = get_current_site(request)
@@ -154,7 +155,7 @@ def table(request, tour_name):
     page = request.GET.get('page')
     try:
         participants = paginator.page(page)
-    except PageNotAnInteger, EmptyPage:
+    except (PageNotAnInteger, EmptyPage):
         participants = paginator.page(1)
 
     leaderboard = []
@@ -199,7 +200,7 @@ def org_table(request, tour_name, org_name):
     page = request.GET.get('page')
     try:
         participants = paginator.page(page)
-    except PageNotAnInteger, EmptyPage:
+    except (PageNotAnInteger, EmptyPage):
         participants = paginator.page(1)
 
     current_site = get_current_site(request)
@@ -314,7 +315,7 @@ def match(request, match_pk):
         paginator = Paginator(match.prediction_set.all(), 20)
         try:
             predictions = paginator.page(request.GET.get('page'))
-        except PageNotAnInteger, EmptyPage:
+        except (PageNotAnInteger, EmptyPage):
             predictions = paginator.page(1)
     else:
         predictions = None
