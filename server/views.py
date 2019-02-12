@@ -89,3 +89,13 @@ def activate(request, uidb64, token):
         return redirect('index')
     else:
         return render(request, 'registration/activation_invalid.html')
+
+
+def about(request):
+    current_site = get_current_site(request)
+    template = get_template('about.html')
+
+    context = {
+        'site_name': current_site.name,
+    }
+    return HttpResponse(template.render(context, request))

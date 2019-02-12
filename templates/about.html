@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block nav %}
+    <h2 align="center">About Us</h2>
+{% endblock %}
+{% block content %}
+<h3>What is Gamlaffo?</h3>
+<p>Gamlaffo is an exciting sports prediction game that allows you to predict the outcome of sporting events for fun. Gamlaffo is based on predicting the results and winning margins of games in major sports such as The All-Ireland Championship and National League in Gaelic Football, The Euros and World Cup in Soccer and the Six Nations and World Cup in Rugby. More sports will be added in the future.</p>
+<p>Gamlaffo is completely free to enter so you can get your friends to join and see how well you do against them.</p>
+
+<h3>How does Gamlaffo work?</h3>
+<p>On the homepage you will see all the competitions that you can currently enter under the heading “Live Competitions”. Simply click on the competition(s) you wish to enter, click join and you will see a fixture list for that competition. Predict the winning team and the margin that they will win by. You enter you prediction right up until the minute before the game starts which means you can see the line-up, weather conditions etc. before you make you mind up. You can also change your prediction right up to the start of the match so you won’t be caught out when the manager makes last minute changes to the team selection.</p>
+
+<h3>How does Gamlaffo differ from other prediction games?</h3>
+<p>Gamlaffo is different in that it is based on the margin as well as the result. Gamlaffo measures how far off you are from the correct result. This means that if you don’t get the result right all is not lost, as you might be quite close to correct the margin which will mean that you will not incur too many points and you may even move up the league table.</p>
+
+<h3>How do I win at Gamlaffo?</h3>
+<p>In Gamlaffo the lowest score wins (just like golf). Once the games you have predicted are played you will automatically incur a number of points based on far away you are from the correct margin. You will have points taken off your total if you correctly predict the winner. A league table will be published each showing how all the entrants doing so you can get some rivalry going with your friends and work colleagues. The more winning team you get right and the closer you are to the winning margins the less points you will occur and the higher up the table you will climb. If you finish on top of the table at the end of the season you will have the honour and glory of being the Gamlaffo Champion for that competition. Even if you don’t win, if you finish higher in the table than your friends you will have the bragging rights for the rest of the year.</p>
+
+<h3>Rules</h3>
+<p>The Rules for each competition are displayed when joining the competition. The rules can also be found on the rules tab of each competition.</p>
+{% if user.is_authenticated %}
+<p>A subset of the rules are listed below.</p>
+<ul>
+    <li>The lowest score wins.</li>
+    <li>You will get a "bonus" deducted from your score if you predict the winning team correctly.</li>
+    <li>You will get a "bonus" multiplied by the "draw multiplier" for predicting a draw correctly.</li>
+    <li>Predictions for a match cannot be submitted/changed after the match has started.</li>
+    <li>Any missed prediction is counted as predicting a draw.</li>
+    <li>If you join a competition after it has started you will receive a draw for any match that has already been played.</li>
+</ul>
+<p>The value of the "bonus" and "draw multiplier" may vary between competitions.</p>
+{% endif %}
+
+<h3>GDPR</h3>
+<p>Gamlaffo complies with GDPR. Information held by Gamlaffo is not shared with any third parties.</p>
+<p>For further details see our GDPR Policy.</p>
+
+{% endblock %}
