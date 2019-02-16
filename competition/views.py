@@ -50,7 +50,7 @@ def submit(request, tour_name):
         for match in fixture_list:
             try:
                 Prediction(user=request.user, match=match, prediction=float(request.POST[str(match.pk)])).save()
-            except (ValueError, KeyError):
+            except (ValueError, KeyError, IntegrityError):
                 continue
 
     for prediction in Prediction.objects.filter(user=request.user):
