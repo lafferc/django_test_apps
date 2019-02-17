@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block nav %}
+    <h2 align="center">GDPR and Cookie Policy</h2>
+{% endblock %}
+{% block content %}
+<h3>Cookies</h3>
+{% if user.is_authenticated %}
+<p><b>sessionid</b> used identify you while you're logged in so that you do not
+need to sign in on every page.
+{% endif %}
+<p><b>csrftoken</b> used for security purposes to prevent Cross-site request 
+forgery (CSRF) attacks.</p>
+
+<h3>Personal Information</h3>
+<p>The table below shows personal information collected by or provided to
+{{ site_name }}, and how it is used.</p>
+<table>
+    <tr>
+        <th>Data</th><th>Type</th><th>Usage</th>
+    </tr>
+    <tr>
+        <td>Username</td><td>mandatory</td><td>Used to link user to a user
+            account.</td>
+    </tr>
+    <tr>
+        <td>Email Address</td><td>mandatory</td><td>Used to verify account and
+            communicate with user.</td>
+    </tr>
+    <tr>
+        <td>First Name</td><td>optional</td><td>Used to communicate with user
+            in a more personal way.</td>
+    </tr>
+    <tr>
+        <td>Last Name</td><td>optional</td><td>Used to communicate with user in
+            a more personal way.</td>
+    </tr>
+    {% if false %}
+    <tr>
+        <td>Date of Birth</td><td>optional</td><td>Used for GDPR.</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td>Last login Date</td><td>collected</td><td>Used for identifying 
+            accounts that are no longer in use.</td>
+    </tr>
+</table>
+
+{% if user.is_authenticated %}
+<p>You can change your details at any time on your
+<a href="{% url 'member:profile' %}">profile settings page</a>.
+<p>Your first and last name is visible to other users in the competition leader
+boards. Your username if used if you have not provided your first and last name
+. You can change the way in which your name is displayed by selecting "user_id"
+, "username" or "full name" on the profile settings page.</p>
+<p>To receive a copy of all personal data or to have your account removed
+please contact the site admins.</p>
+{% endif %}
+
+<h3>Data storage</h3>
+<p>All data is stored securely on {{ site_name }} servers and is not disclosed
+to any third party.</p>
+
+<h3>Data Processing</h3>
+<p>Your personal data is used by {{ site_name }} for the sole purpose of
+providing the experience to you as a user of this site. Your data is not 
+processed by any third party.</p>
+
+{% endblock %}

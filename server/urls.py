@@ -31,5 +31,6 @@ urlpatterns = [
     url(r'^accounts/', include('django.contrib.auth.urls')),
     url(r'^accounts/', include('member.urls', namespace="member")),
     url(r'^about/', views.about, name='about'),
+    url(r'^gdpr/', views.gdpr, name='gdpr'),
 
 ]

@@ -99,3 +99,13 @@ def about(request):
         'site_name': current_site.name,
     }
     return HttpResponse(template.render(context, request))
+
+
+def gdpr(request):
+    current_site = get_current_site(request)
+    template = get_template('gdpr.html')
+
+    context = {
+        'site_name': current_site.name,
+    }
+    return HttpResponse(template.render(context, request))
