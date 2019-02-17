@@ -5,12 +5,21 @@
 {% endblock %}
 {% block content %}
 <h3>Cookies</h3>
+<table>
+    <tr>
+        <th>Cookie</th><th>Type</th><th>Usage</th>
+    </tr>
 {% if user.is_authenticated %}
-<p><b>sessionid</b> used identify you while you're logged in so that you do not
-need to sign in on every page.
+    <tr>
+        <td>sessionid</td><td>functional</td><td>Used identify you while you're
+            logged in so that you do not need to sign in on every page.</td>
+    </tr>
 {% endif %}
-<p><b>csrftoken</b> used for security purposes to prevent Cross-site request 
-forgery (CSRF) attacks.</p>
+    <tr>
+        <td>csrftoken</td><td>functional</td><td>Used for security purposes to
+            prevent Cross-site request forgery (CSRF) attacks.</td>
+    </tr>
+</table>
 
 <h3>Personal Information</h3>
 <p>The table below shows personal information collected by or provided to

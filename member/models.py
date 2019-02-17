@@ -28,6 +28,12 @@ class Profile(models.Model):
     test_features_enabled = models.BooleanField(
             default=False,
             help_text="This user can use features that are under test")
+    cookie_consent = models.PositiveIntegerField(
+            default=0,
+            choices=((0, "accept all cookies"),
+                     (1, "no advertising cookies"),
+                     (2, "functional cookies only")),
+            help_text="The user consents to the following level of cookies")
     
     def get_name(self):
         if self.display_name_format == 0:
