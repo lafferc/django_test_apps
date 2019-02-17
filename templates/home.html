@@ -1,5 +1,21 @@
 {% extends "base.html" %}
 
+{% block sub_head %}
+<script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script>
+$(function() {
+    var x = document.getElementsByClassName("toLocalTimeHM");
+    var offset = new Date().getTimezoneOffset()*60*1000 ;
+    for (i = 0; i < x.length; ++i) {
+        var d = new Date(0);
+        var t = Date.parse(x[i].innerHTML);
+        d.setUTCMilliseconds(t - offset);
+        x[i].innerHTML = d.getHours() + ':' + d.getMinutes();
+    }
+});
+</script>
+{% endblock %}
+
 {% block content %}
 
     {% if live_tournaments %}
@@ -14,7 +30,10 @@
     <h3>Today's Matches</h3>
         <ul>
         {% for match in matches %}
-            <li><a href="{% url 'competition:match' match.pk %}">{{ match }}</a></li>
+            <li>
+                <a href="{% url 'competition:match' match.pk %}">{{ match }}</a>
+                (<span class="toLocalTimeHM">{{match.kick_off|date:"Y/m/d H:i:s" }} </span>)
+            </li>
         {% endfor %}
         </ul>
     {% endif %}
