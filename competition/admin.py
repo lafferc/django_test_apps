@@ -51,7 +51,7 @@ def archive_tournament(modeladmin, request, queryset):
 
 
 class TournamentAdmin(admin.ModelAdmin):
-    list_display = ('name',)
+    list_display = ('name', 'participant_count')
     inlines = ( ParticipantInline, )
     actions = [pop_leaderboard, close_tournament,
                open_tournament, archive_tournament]
@@ -78,6 +78,8 @@ class TournamentAdmin(admin.ModelAdmin):
             return self.fieldsets
         return ((None, {'fields': ('name', 'sport', 'state', 'bonus', 'draw_bonus',
                                    'late_get_bonus', 'year', 'winner')}),)
+    def participant_count(self, obj):
+        return obj.participant_set.count();
 
 
 def calc_match_result(modeladmin, request, queryset):
@@ -140,7 +142,6 @@ class PredictionAdmin(admin.ModelAdmin):
     list_filter = (
         'match__tournament',
         ('user', admin.RelatedOnlyFieldListFilter),
-        ('match', admin.RelatedOnlyFieldListFilter),
     )
 
     def get_readonly_fields(self, request, obj):
