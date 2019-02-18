@@ -27,7 +27,10 @@ def add_tickets(modeladmin, request, queryset):
 class CompetitionAdmin(admin.ModelAdmin):
     inlines = ( TicketInline, )
     actions = [ add_tickets ]
+    list_display = ('organisation', 'tournament', 'participant_count')
 
+    def participant_count(self, obj):
+        return obj.participants.count();
 
 admin.site.register(Profile)
 admin.site.register(Organisation)
