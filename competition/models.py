@@ -31,6 +31,23 @@ class Sport(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        csv_file = self.add_teams;
+        self.add_teams = None
+        super(Sport, self).save(*args, **kwargs)
+
+        if csv_file is None:
+            return
+
+        g_logger.info("handle_teams_upload for %s csv:%s" % (self, csv_file))
+        reader = csv.DictReader(csv_file, delimiter=',')
+        for row in reader:
+            try:
+                row['sport'] = self
+                Team(**row).save()
+            except IntegrityError:
+                g_logger.exception("Failed to add team")
+
 
 class Team(models.Model):
     name = models.CharField(max_length=200)
@@ -141,6 +158,43 @@ class Tournament(models.Model):
 
         self.save()
 
+    def save(self, *args, **kwargs):
+        csv_file = self.add_matches;
+        self.add_matches = None
+        super(Tournament, self).save(*args, **kwargs)
+
+        if csv_file is None:
+            return
+
+        g_logger.info("handle_match_upload for %s csv:%s"
+                      % (self, csv_file))
+        reader = csv.DictReader(csv_file, delimiter=',')
+        for row in reader:
+            g_logger.debug("Row: %r" % row)
+            if not row:
+                continue
+            try:
+                row['tournament'] = self
+                if row['home_team'] == "TBD":
+                    row['home_team'] = None
+                    row['home_team_winner_of'] = self.match_set.get(
+                            match_id=row['home_team_winner_of'])
+                else:
+                    row['home_team'] = self.find_team(row['home_team'])
+                    row['home_team_winner_of'] = None
+                if row['away_team'] == "TBD":
+                    row['away_team'] = None
+                    row['away_team_winner_of'] = self.match_set.get(
+                            match_id=row['away_team_winner_of'])
+                else:
+                    row['away_team'] = self.find_team(row['away_team'])
+                    row['away_team_winner_of'] = None
+                # with transaction.atomic():
+                Match(**row).save()
+            except (IntegrityError, ValidationError, Team.DoesNotExist, Match.DoesNotExist):
+                g_logger.exception("Failed to add match")
+
+
     class Meta:
         permissions = (
             ("csv_upload", "Can add matches via CSV upload file"),
@@ -157,6 +211,29 @@ class Participant(models.Model):
 
     def get_name(self):
         return self.user.profile.get_name()
+
+    def save(self, *args, **kwargs):
+        created = False
+        if self._state.adding:
+            g_logger.info("New Participant added (pre-save) %s" % self)
+            created = True
+
+        super(Participant, self).save(*args, **kwargs)
+
+        if created:
+            g_logger.info("add_draw for %s", self)
+            for match in Match.objects.filter(tournament=self.tournament,
+                                              kick_off__lt=timezone.now(),
+                                              postponed=False):
+                try:
+                    with transaction.atomic():
+                        p = Prediction(user=self.user, match=match, late=True)
+                        if match.score is not None:
+                            p.calc_score(match.score)
+                        p.save()
+                except IntegrityError:
+                    g_logger.exception("User(%s) has already predicted %s" % (self.user, match))
+            self.tournament.update_table()
 
     class Meta:
         unique_together = ('tournament', 'user',)
@@ -238,6 +315,21 @@ class Match(models.Model):
             return False
         return True
 
+    def save(self, *args, **kwargs):
+        created = False
+        if self._state.adding:
+            g_logger.info("New Participant added (pre-save) %s" % self)
+            created = True
+
+        super(Match, self).save(*args, **kwargs)
+
+        if not created and self.score is not None:
+            g_logger.info("update_scores for %s", self)
+            self.check_predictions()
+            self.tournament.update_table()
+            g_logger.info("checking for next round matches: %s", self)
+            self.check_next_round_matches()
+
     class Meta:
         unique_together = ('tournament', 'match_id',)
 
@@ -272,81 +364,3 @@ class Prediction(models.Model):
 
     class Meta:
         unique_together = ('user', 'match',)
-
-
-@receiver(post_save, sender=Participant, dispatch_uid="add_draw_for_matches_already_played")
-def add_draws(sender, instance, created, **kwargs):
-    if created:
-        g_logger.info("add_draw for %s", instance)
-        for match in Match.objects.filter(tournament=instance.tournament,
-                                          kick_off__lt=timezone.now(),
-                                          postponed=False):
-            try:
-                with transaction.atomic():
-                    p = Prediction(user=instance.user, match=match, late=True)
-                    if match.score is not None:
-                        p.calc_score(match.score)
-                    p.save()
-            except IntegrityError:
-                g_logger.exception("User(%s) has already predicted %s" % (instance.user, match))
-        instance.tournament.update_table()
-
-
-@receiver(post_save, sender=Match, dispatch_uid="cal_results_for_match")
-def on_match_saved(sender, instance, created, **kwargs):
-    if not created and instance.score is not None:
-        g_logger.info("update_scores for %s", instance)
-        instance.check_predictions()
-        instance.tournament.update_table()
-        g_logger.info("checking for next round matches: %s", instance)
-        instance.check_next_round_matches()
-
-
-@receiver(post_save, sender=Sport, dispatch_uid="handle_teams_csv_upload")
-def handle_team_upload(sender, instance, created, **kwargs):
-    if not instance.add_teams:
-        return
-    g_logger.info("handle_teams_upload for %s csv:%s" % (instance, instance.add_teams))
-    reader = csv.DictReader(instance.add_teams, delimiter=',')
-    for row in reader:
-        try:
-            row['sport'] = instance
-            with transaction.atomic():
-               Team(**row).save()
-        except IntegrityError:
-            g_logger.exception("Failed to add team")
-    os.remove(os.path.join(settings.MEDIA_ROOT, instance.add_teams.name))
-    instance.add_teams = None
-    instance.save()
-
-@receiver(post_save, sender=Tournament, dispatch_uid="handle_matches_csv_upload")
-def handle_match_upload(sender, instance, created, **kwargs):
-    if not instance.add_matches:
-        return
-    g_logger.info("handle_match_upload for %s csv:%s" % (instance, instance.add_matches))
-    reader = csv.DictReader(instance.add_matches, delimiter=',')
-    for row in reader:
-        g_logger.debug("Row: %r" % row)
-        if not row:
-            continue
-        try:
-            row['tournament'] = instance
-            if row['home_team'] == "TBD":
-                row['home_team'] = None
-                row['home_team_winner_of'] = instance.match_set.get(match_id=row['home_team_winner_of'])
-            else:
-                row['home_team'] = instance.find_team(row['home_team'])
-                row['home_team_winner_of'] = None
-            if row['away_team'] == "TBD":
-                row['away_team'] = None
-                row['away_team_winner_of'] = instance.match_set.get(match_id=row['away_team_winner_of'])
-            else:
-                row['away_team'] = instance.find_team(row['away_team'])
-                row['away_team_winner_of'] = None
-            with transaction.atomic():
-                Match(**row).save()
-        except (IntegrityError, ValidationError, Team.DoesNotExist, Match.DoesNotExist):
-            g_logger.exception("Failed to add match")
-    os.remove(os.path.join(settings.MEDIA_ROOT, instance.add_matches.name))
-    instance.add_matches = None
-    instance.save()
