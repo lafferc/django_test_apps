@@ -1,15 +1,13 @@
 {% extends "competition_base.html" %}
 
 {% block content %}
-{% if other_user %}
-    <p>Here are the predictions that {{ other_user }} has made</p>
-    {% if is_participant %}
-    <p>You cannot see the predictions for matches that you have not predicted</p>
-    {% endif %}
-{% elif user_score %}
+{% if not other_user and user_score %}
     <p>Your current score is {{ user_score }}</p>
 {% endif %}
 {% if predictions %}
+    {% if other_user %}
+        <p>Here are the predictions that {{ other_user }} has made</p>
+    {% endif %}
     <table style="width:auto" border="1">
         <tr>
             <th>Match id</th>
@@ -53,7 +51,11 @@
     {% endfor %}
     </table>
 {% else %}
-    <p>{% if other_user %}{{other_user}} hasn't{% else %}You haven't{% endif %} made any predictions</p>
+    {% if other_user %}
+    <p>You cannot see predictions made by other users until the game has started.</p>
+    {% else %}
+    <p>You haven't made any predictions.</p>
+    {% endif %}
 {% endif %}
 
 {% endblock %}

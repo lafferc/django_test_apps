@@ -10,7 +10,8 @@ $(function() {
         var d = new Date(0);
         var t = Date.parse(x[i].innerHTML);
         d.setUTCMilliseconds(t - offset);
-        x[i].innerHTML = d.getHours() + ':' + d.getMinutes();
+        var m = (d.getMinutes() < 10) ? '0' + d.getMinutes() : d.getMinutes();
+        x[i].innerHTML = d.getHours() + ':' + m;
     }
 });
 </script>
