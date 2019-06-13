@@ -97,6 +97,9 @@ if __name__ == "__main__" :
     parser.add_argument("-v", "--debug",
                         default=False,
                         action="store_true")
+    parser.add_argument("--start_id",
+                        type=int,
+                        default=1)
     # parser.add_argument("--teams",
     #                     default=False,
     #                     action="store_true")
@@ -105,22 +108,14 @@ if __name__ == "__main__" :
 
     tz_diff = datetime.timedelta(hours=-1)
   
-    urls = [
-        # "https://www.gaa.ie/fixtures-results/library/matches/1/0/0/2019-5-01/monthly/_matches-by-date",
-        "https://www.gaa.ie/fixtures-results/library/matches/1/0/0/2019-6-01/monthly/_matches-by-date",
-        "https://www.gaa.ie/fixtures-results/library/matches/1/0/0/2019-7-01/monthly/_matches-by-date",
-    ]
+    url = "https://www.gaa.ie/fixtures-results/library/matches/1/0/0/%s/monthly/_matches-by-date"
 
     matches = []
-    next_id = 1
+    next_id = args.start_id;
 
-    for url in urls:
-        page = urllib2.urlopen(url)
-        soup = BeautifulSoup(page)
+    page = urllib2.urlopen(url % datetime.datetime.now().date())
+    soup = BeautifulSoup(page, features="html.parser")
 
-        matches.extend(parse_matches(soup, next_id, tz_diff))
-
-        next_id = matches[-1]["match_id"] + 1
-        print "curr_id: %s" % next_id
+    matches.extend(parse_matches(soup, next_id, tz_diff))
 
     matches_to_csv(matches, args.out_filename)
