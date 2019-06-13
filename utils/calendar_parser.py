@@ -31,8 +31,21 @@ def parse_events(file_name, debug=False):
         return events
     
 
+def matches_to_csv(matches, file_name):
+    header = ["match_id", "home_team", "away_team", "kick_off", "home_team_winner_of", "away_team_winner_of"]
+
+    if not len(matches):
+        return
+
+    with open(file_name, 'w+') as file:
+        writer = csv.DictWriter(file, fieldnames=header, )
+        writer.writeheader()
+        
+        for row in matches:
+            writer.writerow(row)
+
+
 def events_to_csv(events, file_name, summary_re=g_summary_re):
-    header = ["match_id", "home_team", "away_team", "kick_off"]
     rows = []
     curr_id = 1
     for event in events:
@@ -48,13 +61,7 @@ def events_to_csv(events, file_name, summary_re=g_summary_re):
         rows.append(row)
         curr_id += 1
         
-    if len(rows):
-        with open(file_name, 'w+') as file:
-            writer = csv.DictWriter(file, fieldnames=header, )
-            writer.writeheader()
-            
-            for row in rows:
-                writer.writerow(row)
+    matches_to_csv(rows, file_name)
 
 
 def events_to_teams(events, file_name, summary_re=g_summary_re):
