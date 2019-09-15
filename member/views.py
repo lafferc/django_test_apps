@@ -44,8 +44,6 @@ def profile(request):
 
 @login_required
 def use_token(request):
-    if not request.user.profile.test_features_enabled:
-        raise Http404("User does not have test features enabled")
     if request.method == 'POST':
         try:
             token = request.POST['token'].upper()

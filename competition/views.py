@@ -145,7 +145,7 @@ def table(request, tour_name):
             return redirect("competition:join", tour_name=tour_name) 
         is_participant = False
 
-    if is_participant and request.user.profile.test_features_enabled:
+    if is_participant:
         competitions = participant.competition_set.all()
     else:
         competitions = None
@@ -183,8 +183,6 @@ def table(request, tour_name):
 @login_required
 def org_table(request, tour_name, org_name):
     tournament = tournament_from_name(tour_name)
-    if not request.user.profile.test_features_enabled:
-        raise Http404("User does not have test features enabled")
     try:
         participant = Participant.objects.get(tournament=tournament, user=request.user)
         comp =  participant.competition_set.get(organisation__name=org_name)

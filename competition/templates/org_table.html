@@ -1,7 +1,7 @@
 {% extends "competition_base.html" %}
 
 {% block content %}
-{% if competitions and user.profile.test_features_enabled %}
+{% if competitions %}
     <select onchange="location = this.options[this.selectedIndex].value;">
     {% for competition in competitions %}
         <option value="{% url 'competition:org_table' TOURNAMENT competition %}">{{ competition }}</option>
