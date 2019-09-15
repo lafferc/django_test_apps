@@ -37,7 +37,7 @@ def index(request):
     context = {
         'site_name': current_site.name,
         'live_tournaments': live_tournaments,
-        'closed_tournaments': Tournament.objects.filter(state=Tournament.FINISHED),
+        'closed_tournaments': Tournament.objects.filter(state=Tournament.FINISHED).order_by('-pk'),
         'matches': matches,
     }
     return HttpResponse(template.render(context, request))
