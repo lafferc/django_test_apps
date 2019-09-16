@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from .models import Profile, Ticket
-from .forms import ProfileForm, NameChangeForm
+from .forms import ProfileEditForm, NameChangeForm
 from competition.models import Participant
 import logging
 
@@ -19,7 +19,7 @@ g_logger = logging.getLogger(__name__)
 def profile(request):
     if request.method == 'POST':
         user_form = NameChangeForm(request.POST, instance=request.user)
-        profile_form = ProfileForm(request.POST, instance=request.user.profile)
+        profile_form = ProfileEditForm(request.POST, instance=request.user.profile)
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
@@ -29,7 +29,7 @@ def profile(request):
             # messages.error(request, _('Please correct the error below.'))
     else:
         user_form = NameChangeForm(instance=request.user)
-        profile_form = ProfileForm(instance=request.user.profile)
+        profile_form = ProfileEditForm(instance=request.user.profile)
 
     template = loader.get_template('profile.html')
     current_site = get_current_site(request)
