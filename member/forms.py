@@ -9,7 +9,13 @@ class NameChangeForm(forms.ModelForm):
         fields = ("first_name", "last_name")
 
 
-class ProfileForm(forms.ModelForm):
+class ProfileAddForm(forms.ModelForm):
+    class Meta:
+       model = Profile
+       fields = ('display_name_format', 'cookie_consent',)
+
+
+class ProfileEditForm(forms.ModelForm):
     class Meta:
        model = Profile
        exclude = ('user', 'dob', 'test_features_enabled')

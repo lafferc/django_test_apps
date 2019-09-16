@@ -49,9 +49,7 @@
 {% block menu %}
 {% endblock %}
 {% if user.is_authenticated %}
-    {% if user.profile.test_features_enabled %}
                 <li><a href="{% url 'member:use_token' %}">Enter Competition Code</a></li>
-    {% endif %}
                 <li data-icon="lock"><a href="{% url 'logout' %}">Logout</a></li>
 {% endif %}
             </ul>

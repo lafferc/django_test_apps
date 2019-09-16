@@ -12,6 +12,7 @@ import datetime
 from itertools import chain
 
 from competition.models import Tournament, Match
+from member.forms import ProfileAddForm
 from .forms import SignUpForm
 from .tokens import account_activation_token
 
@@ -37,7 +38,7 @@ def index(request):
     context = {
         'site_name': current_site.name,
         'live_tournaments': live_tournaments,
-        'closed_tournaments': Tournament.objects.filter(state=Tournament.FINISHED),
+        'closed_tournaments': Tournament.objects.filter(state=Tournament.FINISHED).order_by('-pk'),
         'matches': matches,
     }
     return HttpResponse(template.render(context, request))
@@ -48,10 +49,15 @@ def signup(request):
 
     if request.method == 'POST':
         form = SignUpForm(request.POST)
-        if form.is_valid():
+        profile_form = ProfileAddForm(request.POST)
+        if form.is_valid() and profile_form.is_valid():
             user = form.save(commit=False)
             user.is_active = False
             user.save()
+            user.profile.cookie_consent = profile_form.cleaned_data['cookie_consent']
+            user.profile.display_name_format = profile_form.cleaned_data['display_name_format']
+            user.profile.save()
+
             subject = 'Activate Your Account'
             message = render_to_string('registration/activation_email.html', {
                 'user': user,
@@ -65,10 +71,12 @@ def signup(request):
             return redirect('activation_sent')
     else:
         form = SignUpForm()
+        profile_form = ProfileAddForm()
 
     context = {
         'site_name': current_site.name,
 	'form': form,
+        'profile_form': profile_form,
     }
 
     return render(request, 'registration/register.html', context)

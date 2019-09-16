@@ -81,6 +81,9 @@ class TournamentAdmin(admin.ModelAdmin):
     def participant_count(self, obj):
         return obj.participant_set.count();
 
+    def get_inline_instances(self, request, obj=None):
+        return obj and super(TournamentAdmin, self).get_inline_instances(request, obj) or []
+
 
 def calc_match_result(modeladmin, request, queryset):
     tourns = []
