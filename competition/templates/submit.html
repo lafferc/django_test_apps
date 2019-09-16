@@ -30,6 +30,9 @@
     </form>
     <div class="pagination">
         <span class="step-links">
+            {% if fixture_list.has_next %}
+            <p>Note: Please submit any changes before going to the next page, otherwise your changes will be lost</p>
+            {% endif %}
             {% if fixture_list.has_previous %}
                 <a href="?page={{ fixture_list.previous_page_number }}">previous</a>
             {% endif %}
