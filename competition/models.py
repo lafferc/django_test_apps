@@ -293,20 +293,16 @@ class Match(models.Model):
             winner = self.home_team
         else:
             winner = self.away_team
-        try:
-            next_round = self.match_next_home.get()
+
+        for next_round in self.match_next_home.all():
             next_round.home_team = winner
             next_round.home_team_winner_of = None
             next_round.save()
-        except Match.DoesNotExist:
-            pass
-        try:
-            next_round = self.match_next_away.get()
+
+        for next_round in self.match_next_away.all():
             next_round.away_team = winner
             next_round.away_team_winner_of = None
             next_round.save()
-        except Match.DoesNotExist:
-            pass
 
     def has_started(self):
         if self.postponed:

@@ -17,6 +17,10 @@ class TicketInline(admin.TabularInline):
         return False
 
 
+class ParticipantInline(admin.TabularInline):
+    model = Competition.participants.through
+    extra = 0
+
 def add_tickets(modeladmin, request, queryset):
     g_logger.debug("add_tickets(%r, %r, %r)", modeladmin, request, queryset)
     for comp in queryset:
@@ -25,12 +29,23 @@ def add_tickets(modeladmin, request, queryset):
 
 
 class CompetitionAdmin(admin.ModelAdmin):
-    inlines = ( TicketInline, )
+    inlines = ( TicketInline, ParticipantInline)
     actions = [ add_tickets ]
     list_display = ('organisation', 'tournament', 'participant_count')
+    fields = ('organisation', 'tournament', 'token_len')
 
     def participant_count(self, obj):
         return obj.participants.count();
+
+    def get_readonly_fields(self, request, obj):
+        return obj and ('organisation', 'tournament') or []
+
+    def get_inline_instances(self, request, obj=None):
+        return obj and super(CompetitionAdmin, self).get_inline_instances(request, obj) or []
+
+
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'test_features_enabled')
 
 admin.site.register(Profile)
 admin.site.register(Organisation)
