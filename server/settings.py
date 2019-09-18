@@ -130,3 +130,6 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = os.getenv('DJANGO_EMAIL_USER', None)
 EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_PASS', None)
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
