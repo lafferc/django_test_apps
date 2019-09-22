@@ -22,6 +22,7 @@ def index(request):
     current_site = get_current_site(request)
     template = get_template('home.html')
     live_tournaments = Tournament.objects.filter(state=Tournament.ACTIVE)
+
     searchs = []
     today = datetime.date.today()
     for tourn in live_tournaments:
@@ -31,7 +32,20 @@ def index(request):
                                             kick_off__year=today.year, 
                                             kick_off__month=today.month, 
                                             kick_off__day=today.day))
-    matches = sorted(
+    matches_today = sorted(
+                chain(*searchs),
+                    key=lambda instance: instance.kick_off)
+
+    searchs = []
+    tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+    for tourn in live_tournaments:
+        if not tourn.participants.filter(pk=request.user.pk).exists():
+            continue
+        searchs.append(Match.objects.filter(tournament=tourn, 
+                                            kick_off__year=tomorrow.year, 
+                                            kick_off__month=tomorrow.month, 
+                                            kick_off__day=tomorrow.day))
+    matches_tomorrow = sorted(
                 chain(*searchs),
                     key=lambda instance: instance.kick_off)
 
@@ -39,7 +53,8 @@ def index(request):
         'site_name': current_site.name,
         'live_tournaments': live_tournaments,
         'closed_tournaments': Tournament.objects.filter(state=Tournament.FINISHED).order_by('-pk'),
-        'matches': matches,
+        'matches_today': matches_today,
+        'matches_tomorrow': matches_tomorrow,
     }
     return HttpResponse(template.render(context, request))
 
