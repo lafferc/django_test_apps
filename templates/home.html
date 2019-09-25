@@ -32,7 +32,7 @@ $(function() {
     {% if matches_today or matches_tomorrow %}
     <div class="matches">
         {% if matches_today %}
-    <div class="matches_today">
+    <div class="matches_today" style="display: inline-block; vertical-align: top;">
         <h3>Today's Matches</h3>
         <ul>
         {% for match in matches_today %}
@@ -45,7 +45,7 @@ $(function() {
     </div>
         {% endif %}
         {% if matches_tomorrow %}
-    <div class="matches_tomorrow">
+    <div class="matches_tomorrow" style="display: inline-block; vertical-align: top;">
         <h3>Tomorrow's Matches</h3>
         <ul>
         {% for match in matches_tomorrow %}
