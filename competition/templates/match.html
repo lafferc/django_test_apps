@@ -23,6 +23,38 @@ Away Team: Winner of {{ match.away_team_winner_of }}
 <span class="toLocalTime">{{ match.kick_off|date:"Y/m/d H:i:s" }}</span>(<span id="tz_str"></span>)
 {% endif %}
 <br/>
+Your prediction:
+{% if match.has_started %}
+    {{ prediction.prediction }}
+{% else %}
+    {% if prediction %}
+        <script>
+        function edit_prediction () {
+            $( "#prediction_score").hide();
+            $( "#prediction_edit").show();
+        }
+        </script>
+
+        <div id="prediction_score">
+                {{ prediction.prediction }}
+                <button data-icon="edit" onclick="edit_prediction()" />
+        </div>
+        <div id="prediction_edit" style="display: none" >
+            <form action={% url 'competition:predictions' match.tournament.name %} method="post">{% csrf_token %}
+                <input type="hidden" name="prediction_id" value="{{ prediction.id }}">
+                <input type="text" name="prediction_prediction" value="{{ prediction.prediction }}">
+                <input type="submit" data-icon="check">
+            </form>
+        </div>
+    {% else %}
+    <form action={% url 'competition:submit' match.tournament.name %} method="post">{% csrf_token %}
+                <td><input type="text" name="{{match.pk}}"></td>
+                    <input type="submit" data-icon="check">
+    </form>
+    {% endif %}
+{% endif %}
+<br/>
+
 {% if match.score != None %}
 Result: {{ match.score }}
 <br/>
