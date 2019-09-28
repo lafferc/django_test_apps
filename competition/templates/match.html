@@ -23,35 +23,56 @@ Away Team: Winner of {{ match.away_team_winner_of }}
 <span class="toLocalTime">{{ match.kick_off|date:"Y/m/d H:i:s" }}</span>(<span id="tz_str"></span>)
 {% endif %}
 <br/>
-Your prediction:
 {% if match.has_started %}
-    {{ prediction.prediction }}
+Your prediction: {{ prediction.prediction }}
 {% else %}
+<table>
+    <tr>
+        <td>
+            Your prediction:
+        </td>
     {% if prediction %}
         <script>
-        function edit_prediction () {
-            $( "#prediction_score").hide();
-            $( "#prediction_edit").show();
+        function show_edit_form () {
+            $( "#current_vaule").hide();
+            $( "#edit_button").hide();
+            $( "#new_value_input").show();
+            $( "#sumbit_button").show();
+        }
+        function submit_form (form_id) {
+            document.getElementById(form_id).submit();
         }
         </script>
 
-        <div id="prediction_score">
-                {{ prediction.prediction }}
-                <button data-icon="edit" onclick="edit_prediction()" />
-        </div>
-        <div id="prediction_edit" style="display: none" >
-            <form action={% url 'competition:predictions' match.tournament.name %} method="post">{% csrf_token %}
+        <td id="current_vaule">
+            {{ prediction.prediction }}
+        </td>
+        <td id="edit_button">
+            <button data-icon="edit" onclick="show_edit_form()">edit</button>
+        </td>
+        <td id="new_value_input" style="display:none">
+            <form id="edit_form" action={% url 'competition:predictions' match.tournament.name %} method="post">
+                {% csrf_token %}
                 <input type="hidden" name="prediction_id" value="{{ prediction.id }}">
                 <input type="text" name="prediction_prediction" value="{{ prediction.prediction }}">
-                <input type="submit" data-icon="check">
             </form>
-        </div>
+        </td>
+        <td id="sumbit_button" style="display:none">
+            <button data-icon="check" onclick="submit_form('edit_form')">sumbit</button>
+        </td>
     {% else %}
-    <form action={% url 'competition:submit' match.tournament.name %} method="post">{% csrf_token %}
-                <td><input type="text" name="{{match.pk}}"></td>
-                    <input type="submit" data-icon="check">
+        <td>
+            <form id="create_form" action={% url 'competition:submit' match.tournament.name %} method="post">
+                {% csrf_token %}
+                <input type="text" name="{{match.pk}}">
+        </td>
+        <td>
+            <button data-icon="check" onclick="submit_form('create_form')">sumbit</button>
+        </td>
     </form>
     {% endif %}
+    </tr>
+</table>
 {% endif %}
 <br/>
 
