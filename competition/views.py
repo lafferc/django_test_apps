@@ -318,6 +318,10 @@ def match(request, match_pk):
     else:
         predictions = None
 
+    try:
+        user_prediction = match.prediction_set.get(user=request.user)
+    except Prediction.DoesNotExist:
+        user_prediction = None
 
     current_site = get_current_site(request)
     template = loader.get_template('match.html')
@@ -328,5 +332,6 @@ def match(request, match_pk):
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
         'predictions': predictions,
         'match': match,
+        'prediction': user_prediction,
     }
     return HttpResponse(template.render(context, request))
