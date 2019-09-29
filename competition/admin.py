@@ -1,6 +1,6 @@
 from django.contrib import admin
 from competition.models import Team, Tournament, Match, Prediction, Participant
-from competition.models import Sport
+from competition.models import Sport, Benchmark, BenchmarkPrediction
 import logging
 
 g_logger = logging.getLogger(__name__)
@@ -158,3 +158,5 @@ admin.site.register(Team, TeamAdmin)
 admin.site.register(Tournament, TournamentAdmin)
 admin.site.register(Match, MatchAdmin)
 admin.site.register(Prediction, PredictionAdmin)
+admin.site.register(Benchmark)
+admin.site.register(BenchmarkPrediction)

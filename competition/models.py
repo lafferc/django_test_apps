@@ -12,6 +12,7 @@ import logging
 import csv
 import os
 import datetime
+import random
 
 g_logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class Sport(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        csv_file = self.add_teams;
+        csv_file = self.add_teams
         self.add_teams = None
         super(Sport, self).save(*args, **kwargs)
 
@@ -159,7 +160,7 @@ class Tournament(models.Model):
         self.save()
 
     def save(self, *args, **kwargs):
-        csv_file = self.add_matches;
+        csv_file = self.add_matches
         self.add_matches = None
         super(Tournament, self).save(*args, **kwargs)
 
@@ -203,8 +204,8 @@ class Tournament(models.Model):
 class Participant(models.Model):
     tournament = models.ForeignKey(Tournament)
     user = models.ForeignKey(User)
-    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
-    margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
+    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+    margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
 
     def __str__(self):
         return "%s:%s" % (self.tournament, self.user)
@@ -330,17 +331,11 @@ class Match(models.Model):
         unique_together = ('tournament', 'match_id',)
 
 
-class Prediction(models.Model):
-    entered = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User)
+class PredictionBase(models.Model):
     match = models.ForeignKey(Match)
     prediction = models.DecimalField(default=0, max_digits=5, decimal_places=2)
-    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
-    late = models.BooleanField(blank=True, default=False)
-    margin = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
-
-    def __str__(self):
-        return "%s: %s" % (self.user, self.match)
+    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+    margin = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
 
     def calc_score(self, result):
         self.margin = abs(result - self.prediction)
@@ -352,11 +347,113 @@ class Prediction(models.Model):
             self.score = self.margin
 
     def bonus(self, result):
-        if self.late and not self.match.tournament.late_get_bonus:
-            return 0
         if result == 0: # draw 
             return self.match.tournament.bonus * self.match.tournament.draw_bonus
         return self.match.tournament.bonus
 
     class Meta:
+        abstract = True
+
+
+class Prediction(PredictionBase):
+    entered = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User)
+    late = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return "%s: %s" % (self.user, self.match)
+
+    def bonus(self, result):
+        if self.late and not self.match.tournament.late_get_bonus:
+            return 0
+        return super(Prediction, self).bonus(result)
+
+    class Meta:
         unique_together = ('user', 'match',)
+
+
+class Benchmark(models.Model):
+    STATIC = 0
+    MEAN = 1
+    RANDOM = 2
+
+    tournament = models.ForeignKey(Tournament)
+    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+    margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+    name = models.CharField(max_length=50)
+    prediction_algorithm = models.IntegerField(choices=(
+        (STATIC, "Fixed value"),
+        (MEAN, "Average"),
+        (RANDOM, "Random range")))
+    static_value = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+    range_start = models.IntegerField(blank=True, null=True)
+    range_end = models.IntegerField(blank=True, null=True)
+
+    def __str__(self):
+        if self.prediction_algorithm == self.STATIC:
+            return "%s STATIC(%d) %s" % (self.tournament, self.static_value, self.name)
+        elif self.prediction_algorithm == self.MEAN:
+            return "%s MEAN %s" % (self.tournament, self.name)
+        elif self.prediction_algorithm == self.RANDOM:
+            return "%s RANDOM(%d, %d) %s" % (self.tournament, self.range_start, self.range_end, self.name)
+        return "%s OTHER %s" % (self.tournament, self.name)
+
+
+    def clean(self):
+        super(Benchmark, self).clean()
+
+        if self.prediction_algorithm == self.STATIC:
+            if self.static_value is None:
+                raise ValidationError('Static value is required for this prediction algorithm')
+            if self.range_start is not None or self.range_end is not None:
+                raise ValidationError('Range is not used with this prediction algorithm')
+        elif self.prediction_algorithm == self.MEAN:
+            if self.static_value is not None:
+                raise ValidationError('Static value is not used with this prediction algorithm')
+            if self.range_start is not None or self.range_end is not None:
+                raise ValidationError('Range is not used with this prediction algorithm')
+        elif self.prediction_algorithm == self.RANDOM:
+            if self.static_value is not None:
+                raise ValidationError('Static value is not used with this prediction algorithm')
+            if self.range_start is None:
+                raise ValidationError('Range start is required for this prediction algorithm')
+            if self.range_end is None:
+                raise ValidationError('Range end is required for this prediction algorithm')
+            if self.range_start > self.range_end:
+                raise ValidationError('Range start must be less than range end')
+
+    def save(self, *args, **kwargs):
+        created = False
+        if self._state.adding:
+            g_logger.info("New Benchmark added (pre-save) %s" % self)
+            created = True
+
+        super(Benchmark, self).save(*args, **kwargs)
+
+        if created:
+            g_logger.info("Calculating benchmark (%s) for each existing match", self)
+            for match in Match.objects.filter(tournament=self.tournament,
+                                              kick_off__lt=timezone.now(),
+                                              postponed=False):
+                self.predict(match)
+
+    def predict(self, match):
+        prediction = BenchmarkPrediction(benchmark=self, match=match)
+
+        if self.prediction_algorithm == self.STATIC:
+            prediction.prediction = self.static_value
+        elif self.prediction_algorithm == self.RANDOM:
+            prediction.prediction = random.randint(self.range_start, self.range_end)
+
+        prediction.calc_score(match.score)
+        prediction.save()
+
+
+class BenchmarkPrediction(PredictionBase):
+    benchmark = models.ForeignKey(Benchmark)
+
+    def __str__(self):
+        return "%s: %s" % (self.benchmark, self.match)
+
+    class Meta:
+        unique_together = ('benchmark', 'match',)
