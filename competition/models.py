@@ -1,4 +1,5 @@
 from django.db import models, IntegrityError, transaction
+from django.db.models import Avg
 from django.db.models.signals import post_save, pre_save
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
@@ -13,6 +14,7 @@ import csv
 import os
 import datetime
 import random
+from decimal import Decimal
 
 g_logger = logging.getLogger(__name__)
 
@@ -442,10 +444,17 @@ class Benchmark(models.Model):
 
         if self.prediction_algorithm == self.STATIC:
             prediction.prediction = self.static_value
+        elif self.prediction_algorithm == self.MEAN:
+            result = Prediction.objects.filter(match=match, late=False).aggregate(Avg('prediction'))
+            if result['prediction__avg'] is not None:
+                prediction.prediction = Decimal(result['prediction__avg'])
+            else:
+                prediction.prediction = 0
         elif self.prediction_algorithm == self.RANDOM:
             prediction.prediction = random.randint(self.range_start, self.range_end)
 
-        prediction.calc_score(match.score)
+        if match.score is not None:
+            prediction.calc_score(match.score)
         prediction.save()
 
 
