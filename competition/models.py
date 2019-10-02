@@ -96,22 +96,12 @@ class Tournament(models.Model):
         return self.name
 
     def update_table(self):
-        g_logger.info("update_table")
-        for participant in Participant.objects.filter(tournament=self):
-            score = 0
-            total_margin = 0
-            num_predictions = 0
-            for prediction in Prediction.objects.filter(user=participant.user).filter(match__tournament=self):
-                if prediction.score is not None:
-                    score += prediction.score
-                if prediction.margin is not None:
-                    total_margin += prediction.margin
-                    num_predictions += 1
-            if num_predictions == 0:
-                continue
-            participant.score = score
-            participant.margin_per_match = (total_margin / num_predictions)
-            participant.save()
+        g_logger.info("%s update_table" % self)
+        for participant in self.participant_set.all():
+            participant.update_score()
+
+        for benchmark in self.benchmark_set.all():
+            benchmark.update_score()
 
     def find_team(self, name):
         try:
@@ -203,11 +193,60 @@ class Tournament(models.Model):
             ("csv_upload", "Can add matches via CSV upload file"),
         )
 
-class Participant(models.Model):
+
+class Predictor(models.Model):
     tournament = models.ForeignKey(Tournament)
-    user = models.ForeignKey(User)
     score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        created = False
+        if self._state.adding:
+            g_logger.info("New Predictor %s added (pre-save)" % self)
+            created = True
+
+        super(Predictor, self).save(*args, **kwargs)
+
+        if created:
+            g_logger.info("%s: Calculating prediction for each existing match", self)
+            for match in Match.objects.filter(tournament=self.tournament,
+                                              kick_off__lt=timezone.now(),
+                                              postponed=False):
+                prediction = self.predict(match)
+
+                if match.score is not None:
+                    prediction.calc_score(match.score)
+                prediction.save()
+            self.tournament.update_table()
+
+    def predict(self, match):
+        raise NotImplementedError()
+
+    def get_predictions(self):
+        raise NotImplementedError()
+
+    def update_score(self):
+        score = 0
+        total_margin = 0
+        num_predictions = 0
+        for prediction in self.get_predictions():
+            if prediction.score is not None:
+                score += prediction.score
+            if prediction.margin is not None:
+                total_margin += prediction.margin
+                num_predictions += 1
+        if num_predictions == 0:
+            return
+        self.score = score
+        self.margin_per_match = (total_margin / num_predictions)
+        self.save()
+
+    class Meta:
+        abstract = True
+
+
+class Participant(Predictor):
+    user = models.ForeignKey(User)
 
     def __str__(self):
         return "%s:%s" % (self.tournament, self.user)
@@ -215,28 +254,11 @@ class Participant(models.Model):
     def get_name(self):
         return self.user.profile.get_name()
 
-    def save(self, *args, **kwargs):
-        created = False
-        if self._state.adding:
-            g_logger.info("New Participant added (pre-save) %s" % self)
-            created = True
+    def predict(self, match):
+        return Prediction(user=self.user, match=match, late=True)
 
-        super(Participant, self).save(*args, **kwargs)
-
-        if created:
-            g_logger.info("add_draw for %s", self)
-            for match in Match.objects.filter(tournament=self.tournament,
-                                              kick_off__lt=timezone.now(),
-                                              postponed=False):
-                try:
-                    with transaction.atomic():
-                        p = Prediction(user=self.user, match=match, late=True)
-                        if match.score is not None:
-                            p.calc_score(match.score)
-                        p.save()
-                except IntegrityError:
-                    g_logger.exception("User(%s) has already predicted %s" % (self.user, match))
-            self.tournament.update_table()
+    def get_predictions(self):
+        return Prediction.objects.filter(user=self.user).filter(match__tournament=self.tournament)
 
     class Meta:
         unique_together = ('tournament', 'user',)
@@ -374,14 +396,11 @@ class Prediction(PredictionBase):
         unique_together = ('user', 'match',)
 
 
-class Benchmark(models.Model):
+class Benchmark(Predictor):
     STATIC = 0
     MEAN = 1
     RANDOM = 2
 
-    tournament = models.ForeignKey(Tournament)
-    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
-    margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     name = models.CharField(max_length=50)
     prediction_algorithm = models.IntegerField(choices=(
         (STATIC, "Fixed value"),
@@ -424,21 +443,6 @@ class Benchmark(models.Model):
             if self.range_start > self.range_end:
                 raise ValidationError('Range start must be less than range end')
 
-    def save(self, *args, **kwargs):
-        created = False
-        if self._state.adding:
-            g_logger.info("New Benchmark added (pre-save) %s" % self)
-            created = True
-
-        super(Benchmark, self).save(*args, **kwargs)
-
-        if created:
-            g_logger.info("Calculating benchmark (%s) for each existing match", self)
-            for match in Match.objects.filter(tournament=self.tournament,
-                                              kick_off__lt=timezone.now(),
-                                              postponed=False):
-                self.predict(match)
-
     def predict(self, match):
         prediction = BenchmarkPrediction(benchmark=self, match=match)
 
@@ -452,10 +456,11 @@ class Benchmark(models.Model):
                 prediction.prediction = 0
         elif self.prediction_algorithm == self.RANDOM:
             prediction.prediction = random.randint(self.range_start, self.range_end)
+        
+        return prediction
 
-        if match.score is not None:
-            prediction.calc_score(match.score)
-        prediction.save()
+    def get_predictions(self):
+        return self.benchmarkprediction_set.all()
 
 
 class BenchmarkPrediction(PredictionBase):
