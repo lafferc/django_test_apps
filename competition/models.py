@@ -328,6 +328,7 @@ class Match(models.Model):
 
     class Meta:
         unique_together = ('tournament', 'match_id',)
+        verbose_name_plural = "matches"
 
 
 class Prediction(models.Model):

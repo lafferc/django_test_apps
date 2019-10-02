@@ -138,6 +138,12 @@ class MatchAdmin(admin.ModelAdmin):
                                      'away_team', 'kick_off', 'postponed',
                                      'score') }),)
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "tournament":
+            kwargs["queryset"] = Tournament.objects.filter(state__in = [Tournament.PENDING, Tournament.ACTIVE])
+        if db_field.name in ["home_team_winner_of", "away_team_winner_of"]:
+            kwargs["queryset"] = Match.objects.filter(tournament__state__in = [Tournament.PENDING, Tournament.ACTIVE]).filter(score=None)
+        return super(MatchAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 class PredictionAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'match', 'entered')
