@@ -21,6 +21,18 @@ class ParticipantInline(admin.TabularInline):
     model = Competition.participants.through
     extra = 0
 
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+
+        field = super(ParticipantInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+        if db_field.name == 'participant':
+            if request._obj_ is not None:
+                field.queryset = field.queryset.filter(tournament = request._obj_.tournament)  
+            else:
+                field.queryset = field.queryset.none()
+
+        return field
+
 def add_tickets(modeladmin, request, queryset):
     g_logger.debug("add_tickets(%r, %r, %r)", modeladmin, request, queryset)
     for comp in queryset:
@@ -42,6 +54,11 @@ class CompetitionAdmin(admin.ModelAdmin):
 
     def get_inline_instances(self, request, obj=None):
         return obj and super(CompetitionAdmin, self).get_inline_instances(request, obj) or []
+
+    def get_form(self, request, obj=None, **kwargs):
+        # save obj reference for future processing in Inline
+        request._obj_ = obj
+        return super(CompetitionAdmin, self).get_form(request, obj, **kwargs)
 
 
 class ProfileAdmin(admin.ModelAdmin):
