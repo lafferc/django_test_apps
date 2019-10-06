@@ -103,6 +103,18 @@ class Tournament(models.Model):
         for benchmark in self.benchmark_set.all():
             benchmark.update_score()
 
+    def check_predictions(self, match):
+        g_logger.info("%s: update_scores for %s", self, match)
+
+        for participant in self.participant_set.all():
+            participant.check_prediction(match)
+
+        for benchmark in self.benchmark_set.all():
+            benchmark.check_prediction(match)
+
+        self.update_table()
+
+
     def find_team(self, name):
         try:
             return Team.objects.get(sport=self.sport, name=name)
@@ -219,11 +231,22 @@ class Predictor(models.Model):
                 prediction.save()
             self.tournament.update_table()
 
+    def get_name(self):
+        raise NotImplementedError("%s didn't override get_name" % self.__class__)
+
     def predict(self, match):
-        raise NotImplementedError()
+        raise NotImplementedError("%s didn't override predict" % self.__class__)
 
     def get_predictions(self):
-        raise NotImplementedError()
+        raise NotImplementedError("%s didn't override get_predictions" % self.__class__)
+
+    def get_or_create_prediction(self, match):
+        raise NotImplementedError("%s didn't override get_or_create_prediction" % self.__class__)
+
+    def check_prediction(self, match):
+        prediction = self.get_or_create_prediction(match)
+        prediction.calc_score(match.score)
+        prediction.save()
 
     def update_score(self):
         score = 0
@@ -259,6 +282,13 @@ class Participant(Predictor):
 
     def get_predictions(self):
         return Prediction.objects.filter(user=self.user).filter(match__tournament=self.tournament)
+
+    def get_or_create_prediction(self, match):
+        try:
+            return Prediction.objects.get(user=self.user, match=match)
+        except Prediction.DoesNotExist:
+            print("%s did not predict %s" % (self.user, match))
+            return self.predict(match)
 
     class Meta:
         unique_together = ('tournament', 'user',)
@@ -301,16 +331,6 @@ class Match(models.Model):
             s += self.away_team.name
         return s
 
-    def check_predictions(self):
-        for user in self.tournament.participants.all():
-            try:
-                prediction = Prediction.objects.get(user=user, match=self)
-            except Prediction.DoesNotExist:
-                print("%s did not predict %s" % (user, self))
-                prediction = Prediction(user=user, match=self, late=True)
-            prediction.calc_score(self.score)
-            prediction.save()
-
     def check_next_round_matches(self):
         if not self.score:
             return #no winner
@@ -345,9 +365,7 @@ class Match(models.Model):
         super(Match, self).save(*args, **kwargs)
 
         if not created and self.score is not None:
-            g_logger.info("update_scores for %s", self)
-            self.check_predictions()
-            self.tournament.update_table()
+            self.tournament.check_predictions(self)
             g_logger.info("checking for next round matches: %s", self)
             self.check_next_round_matches()
 
@@ -444,6 +462,9 @@ class Benchmark(Predictor):
             if self.range_start > self.range_end:
                 raise ValidationError('Range start must be less than range end')
 
+    def get_name(self):
+        return self.name
+
     def predict(self, match):
         prediction = BenchmarkPrediction(benchmark=self, match=match)
 
@@ -462,6 +483,13 @@ class Benchmark(Predictor):
 
     def get_predictions(self):
         return self.benchmarkprediction_set.all()
+
+    def get_or_create_prediction(self, match):
+        try:
+            return BenchmarkPrediction.objects.get(benchmark=self, match=match)
+        except BenchmarkPrediction.DoesNotExist:
+            print("%s did not predict %s" % (self, match))
+            return self.predict(match)
 
 
 class BenchmarkPrediction(PredictionBase):

@@ -10,6 +10,11 @@
         {% endfor %}
     </select> 
     {% endif %}
+    {% if user.profile.test_features_enabled %}
+    <div class="test_feature">
+        <a href="{% url 'competition:benchmark' TOURNAMENT %}">Include benchmarks</a>
+    </div>
+    {% endif %}
     <table style="width:auto" border="1">
         <tr>
             <th title="To view another user's predictions click on their name">User</th>
@@ -18,12 +23,17 @@
         </tr>
     {% for username, name, score, avg_margin in leaderboard %}
         <tr>
+            {% if username %}
             <td><a href="{% url 'competition:predictions' TOURNAMENT %}?user={{username}}">{{ name }}</a></td>
+            {% else %}
+            <td>{{ name }}</td>
+            {% endif %}
             <td>{{ score }}</td>
             <td>{{ avg_margin }}</td>
         </tr>
     {% endfor %}
     </table>
+    {% if participants %}
     <div class="pagination">
         <span class="step-links">
             {% if participants.has_previous %}
@@ -39,5 +49,6 @@
             {% endif %}
         </span>
     </div>
+    {% endif %}
 {% endif %}
 {% endblock %}
