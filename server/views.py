@@ -31,7 +31,8 @@ def index(request):
         searchs.append(Match.objects.filter(tournament=tourn, 
                                             kick_off__year=today.year, 
                                             kick_off__month=today.month, 
-                                            kick_off__day=today.day))
+                                            kick_off__day=today.day,
+                                            postponed=False))
     matches_today = sorted(
                 chain(*searchs),
                     key=lambda instance: instance.kick_off)
@@ -44,7 +45,8 @@ def index(request):
         searchs.append(Match.objects.filter(tournament=tourn, 
                                             kick_off__year=tomorrow.year, 
                                             kick_off__month=tomorrow.month, 
-                                            kick_off__day=tomorrow.day))
+                                            kick_off__day=tomorrow.day,
+                                            postponed=False))
     matches_tomorrow = sorted(
                 chain(*searchs),
                     key=lambda instance: instance.kick_off)
