@@ -203,7 +203,7 @@ class Tournament(models.Model):
 class Participant(models.Model):
     tournament = models.ForeignKey(Tournament)
     user = models.ForeignKey(User)
-    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
+    score = models.DecimalField(blank=True, null=True, max_digits=6, decimal_places=2);
     margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
 
     def __str__(self):
