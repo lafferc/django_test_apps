@@ -176,7 +176,8 @@ def table(request, tour_name):
         'is_participant': is_participant,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
         'participants': participants,
-	    'competitions': competitions,
+	'competitions': competitions,
+        'has_benchmark': tournament.benchmark_set.count(),
     }
     return HttpResponse(template.render(context, request))
 
@@ -351,7 +352,8 @@ def benchmark(request, tour_name):
     except Participant.DoesNotExist:
         return redirect("competition:join", tour_name=tour_name) 
 
-    if not request.user.profile.test_features_enabled:  
+    if not (request.user.profile.test_features_enabled
+            or tournament.test_features_enabled):
         raise Http404("User does not have test features enabled")
 
     participant_list = tournament.participant_set.all()
@@ -361,8 +363,16 @@ def benchmark(request, tour_name):
                                benchmark_list),
                          key=lambda obj: obj.score)
 
+    paginator = Paginator(sorted_list, 20)
+    page = request.GET.get('page')
+    try:
+        predictors = paginator.page(page)
+    except (PageNotAnInteger, EmptyPage):
+        predictors = paginator.page(1)
+
+
     leaderboard = []
-    for predictor in sorted_list:
+    for predictor in predictors:
         leaderboard.append((None,
                             predictor.get_name(),
                             predictor.score,
@@ -377,5 +387,6 @@ def benchmark(request, tour_name):
         'TOURNAMENT': tournament,
         'is_participant': True,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'participants': predictors,
     }
     return HttpResponse(template.render(context, request))

@@ -168,7 +168,7 @@ class Tournament(models.Model):
         self.add_matches = None
         super(Tournament, self).save(*args, **kwargs)
 
-        if csv_file is None:
+        if not csv_file:
             return
 
         g_logger.info("handle_match_upload for %s csv:%s"
