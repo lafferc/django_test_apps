@@ -209,7 +209,7 @@ class Tournament(models.Model):
 class Predictor(models.Model):
     tournament = models.ForeignKey(Tournament)
     score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
-    margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+    margin_per_match = models.DecimalField(blank=True, null=True, max_digits=6, decimal_places=2)
 
     def save(self, *args, **kwargs):
         created = False

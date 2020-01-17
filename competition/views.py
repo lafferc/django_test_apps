@@ -310,7 +310,12 @@ def match(request, match_pk):
         raise Http404("User is not a Participant")
 
     if match.has_started():
-        paginator = Paginator(match.prediction_set.all(), 20)
+        if match.score is not None:
+            matches = match.prediction_set.all().order_by('score')
+        else:
+            matches = match.prediction_set.all()
+
+        paginator = Paginator(matches, 20)
         try:
             predictions = paginator.page(request.GET.get('page'))
         except (PageNotAnInteger, EmptyPage):
