@@ -161,7 +161,7 @@ def table(request, tour_name):
 
     leaderboard = []
     for participant in participants:
-        leaderboard.append((participant.user.username,
+        leaderboard.append((participant.get_url(),
                             participant.user.profile.get_name(),
                             participant.score,
                             participant.margin_per_match))
@@ -373,7 +373,7 @@ def benchmark(request, tour_name):
 
     leaderboard = []
     for predictor in predictors:
-        leaderboard.append((None,
+        leaderboard.append((predictor.get_url(),
                             predictor.get_name(),
                             predictor.score,
                             predictor.margin_per_match))
