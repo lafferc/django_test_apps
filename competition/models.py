@@ -6,6 +6,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.dispatch import receiver
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string, get_template
 from django.conf import settings
@@ -243,6 +244,9 @@ class Predictor(models.Model):
     def get_or_create_prediction(self, match):
         raise NotImplementedError("%s didn't override get_or_create_prediction" % self.__class__)
 
+    def get_url(self):
+        return None
+
     def check_prediction(self, match):
         prediction = self.get_or_create_prediction(match)
         prediction.calc_score(match.score)
@@ -289,6 +293,11 @@ class Participant(Predictor):
         except Prediction.DoesNotExist:
             print("%s did not predict %s" % (self.user, match))
             return self.predict(match)
+    
+    def get_url(self):
+        return "%s?user=%s" % (
+                reverse('competition:predictions', args=(self.tournament.name,)),
+                self.user.username)
 
     class Meta:
         unique_together = ('tournament', 'user',)

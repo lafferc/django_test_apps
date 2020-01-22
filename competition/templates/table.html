@@ -10,23 +10,16 @@
         {% endfor %}
     </select> 
     {% endif %}
-    {% if has_benchmark %}
-        {% if user.profile.test_features_enabled or TOURNAMENT.test_features_enabled %}
-    <div class="test_feature">
-        <a href="{% url 'competition:benchmark' TOURNAMENT %}">Include benchmarks</a>
-    </div>
-        {% endif %}
-    {% endif %}
     <table style="width:auto" border="1">
         <tr>
             <th title="To view another user's predictions click on their name">User</th>
             <th title="The user with the lowest score is winning">Score</th>
             <th title='The "average margin" is the average difference between the predicted margin and actual margin. This does not include bonuses.'>Average margin</th>
         </tr>
-    {% for username, name, score, avg_margin in leaderboard %}
+    {% for link, name, score, avg_margin in leaderboard %}
         <tr>
-            {% if username %}
-            <td><a href="{% url 'competition:predictions' TOURNAMENT %}?user={{username}}">{{ name }}</a></td>
+            {% if link %}
+            <td><a href="{{ link }}">{{ name }}</a></td>
             {% else %}
             <td>{{ name }}</td>
             {% endif %}
@@ -51,6 +44,13 @@
             {% endif %}
         </span>
     </div>
+    {% endif %}
+    {% if has_benchmark %}
+        {% if user.profile.test_features_enabled or TOURNAMENT.test_features_enabled %}
+    <div class="test_feature">
+        <a href="{% url 'competition:benchmark' TOURNAMENT %}">Show benchmarks</a>
+    </div>
+        {% endif %}
     {% endif %}
 {% endif %}
 {% endblock %}
