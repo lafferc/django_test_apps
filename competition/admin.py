@@ -1,6 +1,6 @@
 from django.contrib import admin
 from competition.models import Team, Tournament, Match, Prediction, Participant
-from competition.models import Sport, Benchmark, BenchmarkPrediction
+from competition.models import Sport
 import logging
 
 g_logger = logging.getLogger(__name__)
@@ -20,20 +20,7 @@ class TeamAdmin(admin.ModelAdmin):
 class ParticipantInline(admin.TabularInline):
     model = Participant
     extra = 0
-    readonly_fields = ('user', 'score', 'margin_per_match')
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
-class BenchmarkInline(admin.TabularInline):
-    model = Benchmark
-    extra = 0
-    fields = ('name', 'score', 'margin_per_match')
-    readonly_fields = ('name', 'score', 'margin_per_match')
+    readonly_fields = ('score', 'margin_per_match', 'user')
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -59,14 +46,13 @@ def open_tournament(modeladmin, request, queryset):
     for tournament in queryset:
         tournament.open(request)
 
-
 def archive_tournament(modeladmin, request, queryset):
     queryset.update(state=Tournament.ARCHIVED)
 
 
 class TournamentAdmin(admin.ModelAdmin):
     list_display = ('name', 'participant_count')
-    inlines = ( BenchmarkInline, ParticipantInline, )
+    inlines = ( ParticipantInline, )
     actions = [pop_leaderboard, close_tournament,
                open_tournament, archive_tournament]
     list_filter = (
@@ -100,15 +86,21 @@ class TournamentAdmin(admin.ModelAdmin):
 
 
 def calc_match_result(modeladmin, request, queryset):
+    tourns = []
     for match in queryset:
         if match.score is None:
             continue
-        match.tournament.check_predictions(match)
-
+        if match.tournament not in tourns:
+            g_logger.info("adding %s to list" % match.tournament)
+            tourns.append(match.tournament)
+        match.check_predictions()
+    for tourn in tourns:
+        tourn.update_table()
 
 def postpone(modeladmin, request, queryset):
-    queryset.update(postponed = True)
-
+    for match in queryset:
+        match.postponed = True
+        match.save()
 
 class MatchAdmin(admin.ModelAdmin):
     list_display = ('match_id', 'home_team', 'away_team', 'kick_off', 'postponed', 'score')
@@ -153,7 +145,6 @@ class MatchAdmin(admin.ModelAdmin):
             kwargs["queryset"] = Match.objects.filter(tournament__state__in = [Tournament.PENDING, Tournament.ACTIVE]).filter(score=None)
         return super(MatchAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
-
 class PredictionAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'match', 'entered')
 
@@ -168,48 +159,8 @@ class PredictionAdmin(admin.ModelAdmin):
         return ('margin','score', "late")
 
 
-class BenchmarkAdmin(admin.ModelAdmin):
-    list_display = ('name', 'tournament', 'prediction_algorithm')
-    fieldsets = (
-        (None, {
-            'fields': (
-                'name', 'tournament', 'prediction_algorithm',
-                'static_value', 'range_start', 'range_end')
-        }),
-    )
-
-    def get_readonly_fields(self, request, obj):
-        if obj:
-            return ('prediction_algorithm', 'static_value', 'range_start',
-                    'range_end', 'tournament', 'score', 'margin_per_match')
-        return ('score', 'margin_per_match')
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "tournament":
-            kwargs["queryset"] = Tournament.objects.filter(state__in = [Tournament.PENDING, Tournament.ACTIVE])
-        return super(BenchmarkAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
-
-    def get_fieldsets(self, request, obj):
-        if not obj:
-            return self.fieldsets
-
-        if obj.prediction_algorithm == Benchmark.STATIC:
-            return ((None, {'fields': (
-                'name', 'tournament', 'prediction_algorithm', 'static_value',
-                'score', 'margin_per_match')}),)
-        elif obj.prediction_algorithm == Benchmark.MEAN:
-            return ((None, {'fields': (
-                'name', 'tournament', 'prediction_algorithm', 'score',
-                'margin_per_match')}),)
-        elif obj.prediction_algorithm == Benchmark.RANDOM:
-            return ((None, {'fields': (
-                'name', 'tournament', 'prediction_algorithm', 'range_start',
-                'range_end', 'score', 'margin_per_match')}),)
-
-
 admin.site.register(Sport)
 admin.site.register(Team, TeamAdmin)
 admin.site.register(Tournament, TournamentAdmin)
 admin.site.register(Match, MatchAdmin)
 admin.site.register(Prediction, PredictionAdmin)
-admin.site.register(Benchmark, BenchmarkAdmin)

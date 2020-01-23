@@ -19,14 +19,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-if DEBUG:
-    SECRET_KEY = "khslfkuwhelkrcakbclkjahlckrsbjac"
-else:
-    # SECURITY WARNING: keep the secret key used in production secret!
-    SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
 ALLOWED_HOSTS = []
 
@@ -128,18 +125,8 @@ LOGGING = {
 }
 
 # email settings
-if DEBUG:
-    EMAIL_USE_TLS = False
-    EMAIL_HOST = '127.0.0.1'
-    EMAIL_PORT = 25
-    EMAIL_HOST_USER = ''
-    EMAIL_HOST_PASSWORD = ''
-else:
-    EMAIL_USE_TLS = True
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_HOST_USER = os.getenv('DJANGO_EMAIL_USER', None)
-    EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_PASS', None)
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = os.getenv('DJANGO_EMAIL_USER', None)
+EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_PASS', None)
