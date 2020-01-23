@@ -10,6 +10,7 @@ from django.db import IntegrityError
 from django.db.models import Q
 
 import decimal
+from itertools import chain
 from .models import Tournament, Match, Prediction, Participant
 from member.models import Competition
 
@@ -160,7 +161,7 @@ def table(request, tour_name):
 
     leaderboard = []
     for participant in participants:
-        leaderboard.append((participant.user.username,
+        leaderboard.append((participant.get_url(),
                             participant.user.profile.get_name(),
                             participant.score,
                             participant.margin_per_match))
@@ -175,7 +176,8 @@ def table(request, tour_name):
         'is_participant': is_participant,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
         'participants': participants,
-	    'competitions': competitions,
+	'competitions': competitions,
+        'has_benchmark': tournament.benchmark_set.count(),
     }
     return HttpResponse(template.render(context, request))
 
@@ -260,7 +262,6 @@ def results(request, tour_name):
             try:
                 match.score = decimal.Decimal(float(request.POST[str(match.pk)]))
                 fixture_list = fixture_list.exclude(pk=match.pk)
-                match.check_predictions()
                 match.save()
             except (ValueError, KeyError):
                 pass
@@ -338,5 +339,54 @@ def match(request, match_pk):
         'predictions': predictions,
         'match': match,
         'prediction': user_prediction,
+    }
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def benchmark(request, tour_name):
+    tournament = tournament_from_name(tour_name)
+
+    try:
+        participant = Participant.objects.get(tournament=tournament, user=request.user)
+    except Participant.DoesNotExist:
+        return redirect("competition:join", tour_name=tour_name) 
+
+    if not (request.user.profile.test_features_enabled
+            or tournament.test_features_enabled):
+        raise Http404("User does not have test features enabled")
+
+    participant_list = tournament.participant_set.all()
+    benchmark_list = tournament.benchmark_set.all()
+
+    sorted_list = sorted(chain(participant_list,
+                               benchmark_list),
+                         key=lambda obj: obj.score)
+
+    paginator = Paginator(sorted_list, 20)
+    page = request.GET.get('page')
+    try:
+        predictors = paginator.page(page)
+    except (PageNotAnInteger, EmptyPage):
+        predictors = paginator.page(1)
+
+
+    leaderboard = []
+    for predictor in predictors:
+        leaderboard.append((predictor.get_url(),
+                            predictor.get_name(),
+                            predictor.score,
+                            predictor.margin_per_match))
+
+
+    current_site = get_current_site(request)
+    template = loader.get_template('table.html')
+    context = {
+        'site_name': current_site.name,
+        'leaderboard': leaderboard,
+        'TOURNAMENT': tournament,
+        'is_participant': True,
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'participants': predictors,
     }
     return HttpResponse(template.render(context, request))
