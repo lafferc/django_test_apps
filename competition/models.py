@@ -40,7 +40,7 @@ class Sport(models.Model):
         self.add_teams = None
         super(Sport, self).save(*args, **kwargs)
 
-        if csv_file is None:
+        if not csv_file:
             return
 
         g_logger.info("handle_teams_upload for %s csv:%s" % (self, csv_file))
