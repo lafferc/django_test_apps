@@ -103,17 +103,24 @@ if __name__ == "__main__" :
     # parser.add_argument("--teams",
     #                     default=False,
     #                     action="store_true")
+    parser.add_argument("--tz_delta",
+                        type=int,
+                        default=0)
+    parser.add_argument("--date", 
+                        help='date to search from e.g. 1-1-2020',
+                        type=str,
+                        default=datetime.datetime.now().date())
 
     args = parser.parse_args()
 
-    tz_diff = datetime.timedelta(hours=-1)
+    tz_diff = datetime.timedelta(hours=args.tz_delta)
   
     url = "https://www.gaa.ie/fixtures-results/library/matches/1/0/0/%s/monthly/_matches-by-date"
 
     matches = []
     next_id = args.start_id;
 
-    page = urllib2.urlopen(url % datetime.datetime.now().date())
+    page = urllib2.urlopen(url % args.date)
     soup = BeautifulSoup(page, features="html.parser")
 
     matches.extend(parse_matches(soup, next_id, tz_diff))
