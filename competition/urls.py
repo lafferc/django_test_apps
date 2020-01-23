@@ -12,4 +12,5 @@ urlpatterns = [
     url(r'^(?P<tour_name>[^/]+)/join/$', views.join, name='join'),
     url(r'^(?P<tour_name>[^/]+)/results/$', views.results, name='results'),
     url(r'^(?P<tour_name>[^/]+)/rules/$', views.rules, name='rules'),
+    url(r'^(?P<tour_name>[^/]+)/benchmark/$', views.benchmark, name='benchmark'),
 ]

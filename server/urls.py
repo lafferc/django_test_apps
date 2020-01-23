@@ -12,7 +12,9 @@ Class-based views
 Including another URLconf
     1. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.conf.urls import include, url
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.views.generic import TemplateView
 from . import views
@@ -34,3 +36,6 @@ urlpatterns = [
     url(r'^gdpr/', views.gdpr, name='gdpr'),
 
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

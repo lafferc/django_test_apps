@@ -31,8 +31,21 @@ def parse_events(file_name, debug=False):
         return events
     
 
-def events_to_csv(events, file_name, summary_re=g_summary_re):
-    header = ["match_id", "home_team", "away_team", "kick_off"]
+def matches_to_csv(matches, file_name):
+    header = ["match_id", "home_team", "away_team", "kick_off", "home_team_winner_of", "away_team_winner_of"]
+
+    if not len(matches):
+        return
+
+    with open(file_name, 'w+') as file:
+        writer = csv.DictWriter(file, fieldnames=header, )
+        writer.writeheader()
+        
+        for row in matches:
+            writer.writerow(row)
+
+
+def events_to_matches(events, summary_re=g_summary_re):
     rows = []
     curr_id = 1
     for event in events:
@@ -41,39 +54,41 @@ def events_to_csv(events, file_name, summary_re=g_summary_re):
             continue
         row = {
            'match_id': curr_id,
-           'home_team': s.group(1),
-           'away_team': s.group(2),
+           'home_team': s.group(1).strip(),
+           'away_team': s.group(2).strip(),
            'kick_off': datetime.datetime.strptime(event["DTSTART"], "%Y%m%dT%H%M%SZ")
         }
         rows.append(row)
         curr_id += 1
+
+    return rows
         
-    if len(rows):
-        with open(file_name, 'w+') as file:
-            writer = csv.DictWriter(file, fieldnames=header, )
-            writer.writeheader()
-            
-            for row in rows:
-                writer.writerow(row)
+
+def events_to_csv(events, file_name, summary_re=g_summary_re):
+    rows = events_to_matches(events, summary_re)
+    matches_to_csv(rows, file_name)
 
 
-def events_to_teams(events, file_name, summary_re=g_summary_re):
+def teams_to_csv(teams, file_name):
     header = ["name", "code"]
-    teams = []
-    for event in events:
-        s = re.search(summary_re, event["SUMMARY"])
-        if s is None:
-            continue
-        if s.group(1) not in teams:
-            teams.append(s.group(1))
-        if s.group(2) not in teams:
-            teams.append(s.group(2))
     if len(teams):
         with open(file_name, 'w+') as file:
-            writer = csv.DictWriter(file, fieldnames=header, )
+            writer = csv.DictWriter(file, fieldnames=header)
             writer.writeheader()
             for team in teams:
                 writer.writerow({"name": team})
+
+
+def matches_to_teams(matches):
+    teams = []
+
+    for m in matches:
+        if m['home_team'] not in teams:
+            teams.append(m['home_team'])
+        if m['away_team'] not in teams:
+            teams.append(m['away_team'])
+
+    return teams
         
 
 if __name__ == "__main__" :
@@ -98,6 +113,9 @@ if __name__ == "__main__" :
     events = parse_events(args.in_filename, args.debug)
 
     if args.teams:
-        events_to_teams(events, args.out_filename, args.regx)
+        # events_to_teams(events, args.out_filename, args.regx)
+        matches = events_to_matches(events, args.regx)
+        teams = matches_to_teams(matches)
+        teams_to_csv(teams, args.out_filename)
     else:
         events_to_csv(events, args.out_filename, args.regx)
