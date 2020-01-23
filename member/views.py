@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.template import loader
 from django.contrib.auth.decorators import login_required, permission_required
@@ -126,10 +126,8 @@ def announcement(request):
 @permission_required('competition.change_match')
 def print_tickets(request, comp_pk):
     current_site = get_current_site(request)
-    try:
-        comp = Competition.objects.get(pk=comp_pk)
-    except Competition.DoesNotExist:
-        raise Http404("Competition does not exist")
+
+    comp = get_object_or_404(Competition, pk=comp_pk)
 
     tickets = comp.ticket_set.filter(used=False)
 
