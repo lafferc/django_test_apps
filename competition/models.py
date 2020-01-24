@@ -81,8 +81,8 @@ class Tournament(models.Model):
     state = models.IntegerField(default=ACTIVE,
                                 choices=((PENDING, "Pending"),
                                          (ACTIVE, "Active"),
-                                         (FINISHED, "finished"),
-                                         (ARCHIVED, "archived")))
+                                         (FINISHED, "Finished"),
+                                         (ARCHIVED, "Archived")))
     winner = models.ForeignKey("Participant", null=True, blank=True, related_name='+')
     add_matches = models.FileField(null=True, blank=True)
     year = models.IntegerField(choices=YEAR_CHOICES, default=current_year)

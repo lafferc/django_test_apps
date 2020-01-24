@@ -15,7 +15,8 @@ class RedirectUsersToCorrectViewTest (TestCase):
 
         sport = Sport.objects.create(name='football')
         for state, name in Tournament._meta.get_field('state').choices:
-            Tournament.objects.create(name='%s_tourn' % name, sport=sport)
+            print("creating %s_tourn" % name.lower())
+            Tournament.objects.create(name='%s_tourn' % name.lower(), sport=sport, state=state)
 
     def setUp(self):
         #print("setUp: Run once for every test method to setup clean data.")
@@ -43,11 +44,11 @@ class RedirectUsersToCorrectViewTest (TestCase):
 
     def test_user_active_submit(self):
         login = self.client.login(username='testuser1', password='test123')
-        response = self.client.get('/competition/Active_tourn/')
-        self.assertRedirects(response, '/competition/Active_tourn/join/')
+        response = self.client.get('/competition/active_tourn/')
+        self.assertRedirects(response, '/competition/active_tourn/join/')
 
     def test_user_finished_join(self):
         login = self.client.login(username='testuser1', password='test123')
-        response = self.client.get('/competition/Active_tourn/')
-        self.assertRedirects(response, '/competition/Active_tourn/table/')
+        response = self.client.get('/competition/finished_tourn/')
+        self.assertRedirects(response, '/competition/finished_tourn/table/')
 
