@@ -1,5 +1,5 @@
 from django.db import models, IntegrityError, transaction
-from django.db.models import Avg
+from django.db.models import Avg, Max
 from django.db.models.signals import post_save, pre_save
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
@@ -97,7 +97,7 @@ class Tournament(models.Model):
         return self.name
 
     def update_table(self):
-        g_logger.info("%s update_table" % self)
+        g_logger.debug("%s update_table" % self)
         for participant in self.participant_set.all():
             participant.update_score()
 
@@ -105,7 +105,7 @@ class Tournament(models.Model):
             benchmark.update_score()
 
     def check_predictions(self, match):
-        g_logger.info("%s: update_scores for %s", self, match)
+        g_logger.debug("%s: update_scores for %s", self, match)
 
         for participant in self.participant_set.all():
             participant.check_prediction(match)
@@ -215,13 +215,13 @@ class Predictor(models.Model):
     def save(self, *args, **kwargs):
         created = False
         if self._state.adding:
-            g_logger.info("New Predictor %s added (pre-save)" % self)
+            g_logger.debug("New Predictor %s added (pre-save)" % self)
             created = True
 
         super(Predictor, self).save(*args, **kwargs)
 
         if created:
-            g_logger.info("%s: Calculating prediction for each existing match", self)
+            g_logger.debug("%s: Calculating prediction for each existing match", self)
             for match in Match.objects.filter(tournament=self.tournament,
                                               kick_off__lt=timezone.now(),
                                               postponed=False):
@@ -305,7 +305,7 @@ class Participant(Predictor):
 
 class Match(models.Model):
     tournament = models.ForeignKey(Tournament)
-    match_id = models.IntegerField()
+    match_id = models.IntegerField(blank=True)
     kick_off = models.DateTimeField(verbose_name='Start Time')
     home_team = models.ForeignKey(Team, related_name='match_home_team', null=True, blank=True)
     home_team_winner_of = models.ForeignKey('self', blank=True, null=True, related_name='match_next_home')
@@ -368,14 +368,21 @@ class Match(models.Model):
     def save(self, *args, **kwargs):
         created = False
         if self._state.adding:
-            g_logger.info("New Participant added (pre-save) %s" % self)
+            g_logger.debug("New Match added (pre-save) %s" % self)
             created = True
+
+            if self.match_id is None:
+                g_logger.debug("New Match %s doesn't has a match_id", self)
+                query = Match.objects.filter(tournament=self.tournament)
+                curr_max_id = query.aggregate(Max('match_id'))['match_id__max']
+                g_logger.debug("Max value of used match_id is %s", curr_max_id)
+                self.match_id = curr_max_id + 1 if curr_max_id else 1
 
         super(Match, self).save(*args, **kwargs)
 
         if not created and self.score is not None:
             self.tournament.check_predictions(self)
-            g_logger.info("checking for next round matches: %s", self)
+            g_logger.debug("checking for next round matches: %s", self)
             self.check_next_round_matches()
 
     class Meta:
