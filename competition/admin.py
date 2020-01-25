@@ -65,7 +65,7 @@ def archive_tournament(modeladmin, request, queryset):
 
 
 class TournamentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'participant_count')
+    list_display = ('name', 'participant_count', 'match_count')
     inlines = ( BenchmarkInline, ParticipantInline, )
     actions = [pop_leaderboard, close_tournament,
                open_tournament, archive_tournament]
@@ -92,8 +92,12 @@ class TournamentAdmin(admin.ModelAdmin):
             return self.fieldsets
         return ((None, {'fields': ('name', 'sport', 'state', 'bonus', 'draw_bonus',
                                    'late_get_bonus', 'year', 'winner')}),)
+
     def participant_count(self, obj):
         return obj.participant_set.count();
+
+    def match_count(self, obj):
+        return obj.match_set.count();
 
     def get_inline_instances(self, request, obj=None):
         return obj and super(TournamentAdmin, self).get_inline_instances(request, obj) or []
@@ -105,9 +109,8 @@ def calc_match_result(modeladmin, request, queryset):
             continue
         match.tournament.check_predictions(match)
 
-
 def postpone(modeladmin, request, queryset):
-    queryset.update(postponed = True)
+    queryset.update(postponed=True)
 
 
 class MatchAdmin(admin.ModelAdmin):
