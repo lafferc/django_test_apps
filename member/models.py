@@ -78,6 +78,7 @@ def save_user_profile(sender, instance, **kwargs):
 class Organisation(models.Model):
     name = models.CharField(max_length=50, unique=True)
     contact = models.CharField(max_length=50, blank=True)
+    logo = models.ImageField(upload_to='images/', null=True, blank=True)
 
     def __str__(self):
         return self.name

@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.template import loader
 from django.contrib.auth.decorators import login_required, permission_required
@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
-from .models import Profile, Ticket
+from .models import Profile, Ticket, Competition
 from .forms import ProfileEditForm, NameChangeForm
 from competition.models import Participant
 import logging
@@ -73,6 +73,7 @@ def use_token(request):
     }
     return HttpResponse(template.render(context, request))
 
+
 @user_passes_test(lambda user: user.is_superuser)
 def announcement(request):
     current_site = get_current_site(request)
@@ -117,6 +118,27 @@ def announcement(request):
     template = loader.get_template('announcement.html')
     context = {
         'site_name': current_site.name,
+    }
+
+    return HttpResponse(template.render(context, request))
+
+
+@permission_required('competition.change_match')
+def print_tickets(request, comp_pk):
+    current_site = get_current_site(request)
+
+    comp = get_object_or_404(Competition, pk=comp_pk)
+
+    tickets = comp.ticket_set.filter(used=False)
+
+    if not tickets:
+        raise Http404("Competition has no tickets")
+
+    template = loader.get_template('tickets.html')
+    context = {
+        'site_name': current_site.name,
+        'comp': comp,
+        'tickets': tickets,
     }
 
     return HttpResponse(template.render(context, request))

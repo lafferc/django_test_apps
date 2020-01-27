@@ -1,10 +1,12 @@
 from django.db import models, IntegrityError, transaction
+from django.db.models import Avg, Max
 from django.db.models.signals import post_save, pre_save
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from django.dispatch import receiver
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string, get_template
 from django.conf import settings
@@ -12,6 +14,8 @@ import logging
 import csv
 import os
 import datetime
+import random
+from decimal import Decimal
 
 g_logger = logging.getLogger(__name__)
 
@@ -30,6 +34,23 @@ class Sport(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        csv_file = self.add_teams
+        self.add_teams = None
+        super(Sport, self).save(*args, **kwargs)
+
+        if not csv_file:
+            return
+
+        g_logger.info("handle_teams_upload for %s csv:%s" % (self, csv_file))
+        reader = csv.DictReader(csv_file, delimiter=',')
+        for row in reader:
+            try:
+                row['sport'] = self
+                Team(**row).save()
+            except IntegrityError:
+                g_logger.exception("Failed to add team")
 
 
 class Team(models.Model):
@@ -60,8 +81,8 @@ class Tournament(models.Model):
     state = models.IntegerField(default=ACTIVE,
                                 choices=((PENDING, "Pending"),
                                          (ACTIVE, "Active"),
-                                         (FINISHED, "finished"),
-                                         (ARCHIVED, "archived")))
+                                         (FINISHED, "Finished"),
+                                         (ARCHIVED, "Archived")))
     winner = models.ForeignKey("Participant", null=True, blank=True, related_name='+')
     add_matches = models.FileField(null=True, blank=True)
     year = models.IntegerField(choices=YEAR_CHOICES, default=current_year)
@@ -76,22 +97,24 @@ class Tournament(models.Model):
         return self.name
 
     def update_table(self):
-        g_logger.info("update_table")
-        for participant in Participant.objects.filter(tournament=self):
-            score = 0
-            total_margin = 0
-            num_predictions = 0
-            for prediction in Prediction.objects.filter(user=participant.user).filter(match__tournament=self):
-                if prediction.score is not None:
-                    score += prediction.score
-                if prediction.margin is not None:
-                    total_margin += prediction.margin
-                    num_predictions += 1
-            if num_predictions == 0:
-                continue
-            participant.score = score
-            participant.margin_per_match = (total_margin / num_predictions)
-            participant.save()
+        g_logger.debug("%s update_table" % self)
+        for participant in self.participant_set.all():
+            participant.update_score()
+
+        for benchmark in self.benchmark_set.all():
+            benchmark.update_score()
+
+    def check_predictions(self, match):
+        g_logger.debug("%s: update_scores for %s", self, match)
+
+        for participant in self.participant_set.all():
+            participant.check_prediction(match)
+
+        for benchmark in self.benchmark_set.all():
+            benchmark.check_prediction(match)
+
+        self.update_table()
+
 
     def find_team(self, name):
         try:
@@ -141,16 +164,116 @@ class Tournament(models.Model):
 
         self.save()
 
+    def save(self, *args, **kwargs):
+        csv_file = self.add_matches
+        self.add_matches = None
+        super(Tournament, self).save(*args, **kwargs)
+
+        if not csv_file:
+            return
+
+        g_logger.info("handle_match_upload for %s csv:%s"
+                      % (self, csv_file))
+        reader = csv.DictReader(csv_file, delimiter=',')
+        for row in reader:
+            g_logger.debug("Row: %r" % row)
+            if not row:
+                continue
+            try:
+                row['tournament'] = self
+                if row['home_team'] == "TBD":
+                    row['home_team'] = None
+                    row['home_team_winner_of'] = self.match_set.get(
+                            match_id=row['home_team_winner_of'])
+                else:
+                    row['home_team'] = self.find_team(row['home_team'])
+                    row['home_team_winner_of'] = None
+                if row['away_team'] == "TBD":
+                    row['away_team'] = None
+                    row['away_team_winner_of'] = self.match_set.get(
+                            match_id=row['away_team_winner_of'])
+                else:
+                    row['away_team'] = self.find_team(row['away_team'])
+                    row['away_team_winner_of'] = None
+                # with transaction.atomic():
+                Match(**row).save()
+            except (IntegrityError, ValidationError, Team.DoesNotExist, Match.DoesNotExist):
+                g_logger.exception("Failed to add match")
+
+
     class Meta:
         permissions = (
             ("csv_upload", "Can add matches via CSV upload file"),
         )
 
-class Participant(models.Model):
+
+class Predictor(models.Model):
     tournament = models.ForeignKey(Tournament)
+    score = models.DecimalField(blank=True, null=True, max_digits=6, decimal_places=2)
+    margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        created = False
+        if self._state.adding:
+            g_logger.debug("New Predictor %s added (pre-save)" % self)
+            created = True
+
+        super(Predictor, self).save(*args, **kwargs)
+
+        if created:
+            g_logger.debug("%s: Calculating prediction for each existing match", self)
+            for match in Match.objects.filter(tournament=self.tournament,
+                                              kick_off__lt=timezone.now(),
+                                              postponed=False):
+                prediction = self.predict(match)
+
+                if match.score is not None:
+                    prediction.calc_score(match.score)
+                prediction.save()
+            self.tournament.update_table()
+
+    def get_name(self):
+        raise NotImplementedError("%s didn't override get_name" % self.__class__)
+
+    def predict(self, match):
+        raise NotImplementedError("%s didn't override predict" % self.__class__)
+
+    def get_predictions(self):
+        raise NotImplementedError("%s didn't override get_predictions" % self.__class__)
+
+    def get_or_create_prediction(self, match):
+        raise NotImplementedError("%s didn't override get_or_create_prediction" % self.__class__)
+
+    def get_url(self):
+        return None
+
+    def check_prediction(self, match):
+        prediction = self.get_or_create_prediction(match)
+        prediction.calc_score(match.score)
+        prediction.save()
+
+    def update_score(self):
+        score = 0
+        total_margin = 0
+        num_predictions = 0
+        for prediction in self.get_predictions():
+            if prediction.score is not None:
+                score += prediction.score
+            if prediction.margin is not None:
+                total_margin += prediction.margin
+                num_predictions += 1
+        if num_predictions == 0:
+            return
+        self.score = score
+        self.margin_per_match = (total_margin / num_predictions)
+        self.save()
+
+    class Meta:
+        abstract = True
+
+
+class Participant(Predictor):
     user = models.ForeignKey(User)
-    score = models.DecimalField(blank=True, null=True, max_digits=6, decimal_places=2);
-    margin_per_match = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
 
     def __str__(self):
         return "%s:%s" % (self.tournament, self.user)
@@ -158,13 +281,31 @@ class Participant(models.Model):
     def get_name(self):
         return self.user.profile.get_name()
 
+    def predict(self, match):
+        return Prediction(user=self.user, match=match, late=True)
+
+    def get_predictions(self):
+        return Prediction.objects.filter(user=self.user).filter(match__tournament=self.tournament)
+
+    def get_or_create_prediction(self, match):
+        try:
+            return Prediction.objects.get(user=self.user, match=match)
+        except Prediction.DoesNotExist:
+            print("%s did not predict %s" % (self.user, match))
+            return self.predict(match)
+    
+    def get_url(self):
+        return "%s?user=%s" % (
+                reverse('competition:predictions', args=(self.tournament.name,)),
+                self.user.username)
+
     class Meta:
         unique_together = ('tournament', 'user',)
 
 
 class Match(models.Model):
     tournament = models.ForeignKey(Tournament)
-    match_id = models.IntegerField()
+    match_id = models.IntegerField(blank=True)
     kick_off = models.DateTimeField(verbose_name='Start Time')
     home_team = models.ForeignKey(Team, related_name='match_home_team', null=True, blank=True)
     home_team_winner_of = models.ForeignKey('self', blank=True, null=True, related_name='match_next_home')
@@ -199,16 +340,6 @@ class Match(models.Model):
             s += self.away_team.name
         return s
 
-    def check_predictions(self):
-        for user in self.tournament.participants.all():
-            try:
-                prediction = Prediction.objects.get(user=user, match=self)
-            except Prediction.DoesNotExist:
-                print("%s did not predict %s" % (user, self))
-                prediction = Prediction(user=user, match=self, late=True)
-            prediction.calc_score(self.score)
-            prediction.save()
-
     def check_next_round_matches(self):
         if not self.score:
             return #no winner
@@ -234,22 +365,36 @@ class Match(models.Model):
             return False
         return True
 
+    def save(self, *args, **kwargs):
+        created = False
+        if self._state.adding:
+            g_logger.debug("New Match added (pre-save) %s" % self)
+            created = True
+
+            if self.match_id is None:
+                g_logger.debug("New Match %s doesn't has a match_id", self)
+                query = Match.objects.filter(tournament=self.tournament)
+                curr_max_id = query.aggregate(Max('match_id'))['match_id__max']
+                g_logger.debug("Max value of used match_id is %s", curr_max_id)
+                self.match_id = curr_max_id + 1 if curr_max_id else 1
+
+        super(Match, self).save(*args, **kwargs)
+
+        if not created and self.score is not None:
+            self.tournament.check_predictions(self)
+            g_logger.debug("checking for next round matches: %s", self)
+            self.check_next_round_matches()
+
     class Meta:
         unique_together = ('tournament', 'match_id',)
         verbose_name_plural = "matches"
 
 
-class Prediction(models.Model):
-    entered = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User)
+class PredictionBase(models.Model):
     match = models.ForeignKey(Match)
     prediction = models.DecimalField(default=0, max_digits=5, decimal_places=2)
-    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
-    late = models.BooleanField(blank=True, default=False)
-    margin = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2);
-
-    def __str__(self):
-        return "%s: %s" % (self.user, self.match)
+    score = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+    margin = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
 
     def calc_score(self, result):
         self.margin = abs(result - self.prediction)
@@ -261,89 +406,115 @@ class Prediction(models.Model):
             self.score = self.margin
 
     def bonus(self, result):
-        if self.late and not self.match.tournament.late_get_bonus:
-            return 0
         if result == 0: # draw 
             return self.match.tournament.bonus * self.match.tournament.draw_bonus
         return self.match.tournament.bonus
 
     class Meta:
+        abstract = True
+
+
+class Prediction(PredictionBase):
+    entered = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User)
+    late = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return "%s: %s" % (self.user, self.match)
+
+    def bonus(self, result):
+        if self.late and not self.match.tournament.late_get_bonus:
+            return 0
+        return super(Prediction, self).bonus(result)
+
+    class Meta:
         unique_together = ('user', 'match',)
 
 
-@receiver(post_save, sender=Participant, dispatch_uid="add_draw_for_matches_already_played")
-def add_draws(sender, instance, created, **kwargs):
-    if created:
-        g_logger.info("add_draw for %s", instance)
-        for match in Match.objects.filter(tournament=instance.tournament,
-                                          kick_off__lt=timezone.now(),
-                                          postponed=False):
-            try:
-                with transaction.atomic():
-                    p = Prediction(user=instance.user, match=match, late=True)
-                    if match.score is not None:
-                        p.calc_score(match.score)
-                    p.save()
-            except IntegrityError:
-                g_logger.exception("User(%s) has already predicted %s" % (instance.user, match))
-        instance.tournament.update_table()
+class Benchmark(Predictor):
+    STATIC = 0
+    MEAN = 1
+    RANDOM = 2
+
+    name = models.CharField(max_length=50)
+    prediction_algorithm = models.IntegerField(choices=(
+        (STATIC, "Fixed value"),
+        (MEAN, "Average"),
+        (RANDOM, "Random range")))
+    static_value = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+    range_start = models.IntegerField(blank=True, null=True)
+    range_end = models.IntegerField(blank=True, null=True)
+
+    def __str__(self):
+        if self.prediction_algorithm == self.STATIC:
+            return "%s STATIC(%d) %s" % (self.tournament, self.static_value, self.name)
+        elif self.prediction_algorithm == self.MEAN:
+            return "%s MEAN %s" % (self.tournament, self.name)
+        elif self.prediction_algorithm == self.RANDOM:
+            return "%s RANDOM(%d, %d) %s" % (self.tournament, self.range_start, self.range_end, self.name)
+        return "%s OTHER %s" % (self.tournament, self.name)
 
 
-@receiver(post_save, sender=Match, dispatch_uid="cal_results_for_match")
-def on_match_saved(sender, instance, created, **kwargs):
-    if not created and instance.score is not None:
-        g_logger.info("update_scores for %s", instance)
-        instance.check_predictions()
-        instance.tournament.update_table()
-        g_logger.info("checking for next round matches: %s", instance)
-        instance.check_next_round_matches()
+    def clean(self):
+        super(Benchmark, self).clean()
 
+        if self.prediction_algorithm == self.STATIC:
+            if self.static_value is None:
+                raise ValidationError('Static value is required for this prediction algorithm')
+            if self.range_start is not None or self.range_end is not None:
+                raise ValidationError('Range is not used with this prediction algorithm')
+        elif self.prediction_algorithm == self.MEAN:
+            if self.static_value is not None:
+                raise ValidationError('Static value is not used with this prediction algorithm')
+            if self.range_start is not None or self.range_end is not None:
+                raise ValidationError('Range is not used with this prediction algorithm')
+        elif self.prediction_algorithm == self.RANDOM:
+            if self.static_value is not None:
+                raise ValidationError('Static value is not used with this prediction algorithm')
+            if self.range_start is None:
+                raise ValidationError('Range start is required for this prediction algorithm')
+            if self.range_end is None:
+                raise ValidationError('Range end is required for this prediction algorithm')
+            if self.range_start > self.range_end:
+                raise ValidationError('Range start must be less than range end')
 
-@receiver(post_save, sender=Sport, dispatch_uid="handle_teams_csv_upload")
-def handle_team_upload(sender, instance, created, **kwargs):
-    if not instance.add_teams:
-        return
-    g_logger.info("handle_teams_upload for %s csv:%s" % (instance, instance.add_teams))
-    reader = csv.DictReader(instance.add_teams, delimiter=',')
-    for row in reader:
-        try:
-            row['sport'] = instance
-            with transaction.atomic():
-               Team(**row).save()
-        except IntegrityError:
-            g_logger.exception("Failed to add team")
-    os.remove(os.path.join(settings.MEDIA_ROOT, instance.add_teams.name))
-    instance.add_teams = None
-    instance.save()
+    def get_name(self):
+        return self.name
 
-@receiver(post_save, sender=Tournament, dispatch_uid="handle_matches_csv_upload")
-def handle_match_upload(sender, instance, created, **kwargs):
-    if not instance.add_matches:
-        return
-    g_logger.info("handle_match_upload for %s csv:%s" % (instance, instance.add_matches))
-    reader = csv.DictReader(instance.add_matches, delimiter=',')
-    for row in reader:
-        g_logger.debug("Row: %r" % row)
-        if not row:
-            continue
-        try:
-            row['tournament'] = instance
-            if row['home_team'] == "TBD":
-                row['home_team'] = None
-                row['home_team_winner_of'] = instance.match_set.get(match_id=row['home_team_winner_of'])
+    def predict(self, match):
+        prediction = BenchmarkPrediction(benchmark=self, match=match)
+
+        if self.prediction_algorithm == self.STATIC:
+            prediction.prediction = self.static_value
+        elif self.prediction_algorithm == self.MEAN:
+            result = Prediction.objects.filter(match=match, late=False).aggregate(Avg('prediction'))
+            if result['prediction__avg'] is not None:
+                prediction.prediction = Decimal(result['prediction__avg'])
+                if abs(prediction.prediction) < 0.5:
+                    prediction.prediction = 0
             else:
-                row['home_team'] = instance.find_team(row['home_team'])
-                row['home_team_winner_of'] = None
-            if row['away_team'] == "TBD":
-                row['away_team'] = None
-                row['away_team_winner_of'] = instance.match_set.get(match_id=row['away_team_winner_of'])
-            else:
-                row['away_team'] = instance.find_team(row['away_team'])
-                row['away_team_winner_of'] = None
-            with transaction.atomic():
-                Match(**row).save()
-        except (IntegrityError, ValidationError, Team.DoesNotExist, Match.DoesNotExist):
-            g_logger.exception("Failed to add match")
-    os.remove(os.path.join(settings.MEDIA_ROOT, instance.add_matches.name))
-    instance.add_matches = None
-    instance.save()
+                prediction.prediction = 0
+        elif self.prediction_algorithm == self.RANDOM:
+            prediction.prediction = random.randint(self.range_start, self.range_end)
+        
+        return prediction
+
+    def get_predictions(self):
+        return self.benchmarkprediction_set.all()
+
+    def get_or_create_prediction(self, match):
+        try:
+            return BenchmarkPrediction.objects.get(benchmark=self, match=match)
+        except BenchmarkPrediction.DoesNotExist:
+            print("%s did not predict %s" % (self, match))
+            return self.predict(match)
+
+
+class BenchmarkPrediction(PredictionBase):
+    benchmark = models.ForeignKey(Benchmark)
+
+    def __str__(self):
+        return "%s: %s" % (self.benchmark, self.match)
+
+    class Meta:
+        unique_together = ('benchmark', 'match',)
