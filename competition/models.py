@@ -490,6 +490,8 @@ class Benchmark(Predictor):
             result = Prediction.objects.filter(match=match, late=False).aggregate(Avg('prediction'))
             if result['prediction__avg'] is not None:
                 prediction.prediction = Decimal(result['prediction__avg'])
+                if abs(prediction.prediction) < 0.5:
+                    prediction.prediction = 0
             else:
                 prediction.prediction = 0
         elif self.prediction_algorithm == self.RANDOM:
