@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name='Benchmark',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('score', models.DecimalField(null=True, max_digits=5, decimal_places=2, blank=True)),
+                ('score', models.DecimalField(null=True, max_digits=6, decimal_places=2, blank=True)),
                 ('margin_per_match', models.DecimalField(null=True, max_digits=5, decimal_places=2, blank=True)),
                 ('name', models.CharField(max_length=50)),
                 ('prediction_algorithm', models.IntegerField(choices=[(0, b'Fixed value'), (1, b'Average'), (2, b'Random range')])),

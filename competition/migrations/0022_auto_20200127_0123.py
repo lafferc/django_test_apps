@@ -13,24 +13,9 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='benchmark',
-            name='margin_per_match',
-            field=models.DecimalField(null=True, max_digits=6, decimal_places=2, blank=True),
-        ),
-        migrations.AlterField(
             model_name='match',
             name='match_id',
             field=models.IntegerField(blank=True),
-        ),
-        migrations.AlterField(
-            model_name='participant',
-            name='margin_per_match',
-            field=models.DecimalField(null=True, max_digits=6, decimal_places=2, blank=True),
-        ),
-        migrations.AlterField(
-            model_name='participant',
-            name='score',
-            field=models.DecimalField(null=True, max_digits=5, decimal_places=2, blank=True),
         ),
         migrations.AlterField(
             model_name='tournament',
