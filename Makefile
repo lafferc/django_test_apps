@@ -6,7 +6,8 @@ install:
 	pip install -r requirements.txt
 	mkdir $(target_dir)
 	rsync -rv --exclude=".*" . $(target_dir)
-	cd $(target_dir); ./manage.py migrate; chown apache:apache *
+	$(target_dir)/manage.py collectstatic
+	$(target_dir)/manage.py migrate
 	chown -R apache:apache $(target_dir)
 	cp gamlaffo.conf /etc/httpd/conf.d/
 	service httpd start
