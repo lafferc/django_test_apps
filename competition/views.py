@@ -203,7 +203,7 @@ def org_table(request, tour_name, org_name):
         'is_participant': True,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
         'participants': participants,
-	    'competitions': competitions,
+	'competitions': competitions,
     }
     return HttpResponse(template.render(context, request))
 
