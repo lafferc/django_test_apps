@@ -1,5 +1,7 @@
 {% extends "member_base.html" %}
 
+{% load account socialaccount %} 
+
 {% block content %}
     <h1>Profile for {{ profile.user }}</h1>
     <p>username:{{ user }}</p>
@@ -10,5 +12,7 @@
         {{ profile_form.as_p }}
         <button type="submit">Save changes</button>
     </form>
+    <a href="{% provider_login_url "twitter" process="connect" %}">Connect your twitter account</a>
+    <a href="{% provider_login_url "google" process="connect" %}">Connect your google account</a>
 
 {% endblock %}

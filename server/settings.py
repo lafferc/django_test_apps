@@ -37,11 +37,19 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.sessions',
+    'django.contrib.sites',
     'django.contrib.staticfiles',
     'competition',
     'member',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.twitter',
+
 )
 
 MIDDLEWARE_CLASSES = (
@@ -127,7 +135,7 @@ LOGGING = {
     },
 }
 
-# email settings
+# Email settings
 if DEBUG:
     EMAIL_USE_TLS = False
     EMAIL_HOST = '127.0.0.1'
@@ -143,3 +151,22 @@ else:
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+AUTHENTICATION_BACKENDS = (
+    # Needed to login by username in Django admin, regardless of `allauth`
+    'django.contrib.auth.backends.ModelBackend',
+    # `allauth` specific authentication methods, such as login by e-mail
+    'allauth.account.auth_backends.AuthenticationBackend',
+    )
+
+SITE_ID = 1
+
+# Provider specific settings SOCIALACCOUNT_PROVIDERS = { 'google': { # For each OAuth based provider, either add a ``SocialApp`` # (``socialaccount`` app) containing the required client # credentials, or list them here: 'APP': { 'client_id': '123', 'secret': '456', 'key': '' } } }
+
+# AllAuth settings
+ACCOUNT_EMAIL_REQUIRED=True
+ACCOUNT_EMAIL_VERIFICATION="mandatory"
+ACCOUNT_SESSION_REMEMBER=True
+ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE=True
+# ACCOUNT_SIGNUP_FORM_CLASS=
