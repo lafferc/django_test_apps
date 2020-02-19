@@ -11,7 +11,7 @@ from django.db.models import Q
 
 import decimal
 from itertools import chain
-from .models import Tournament, Match, Prediction, Participant
+from .models import Tournament, Match, Prediction, Participant, Benchmark
 from member.models import Competition
 
 
@@ -149,17 +149,16 @@ def table(request, tour_name):
     paginator = Paginator(participant_list, 20)
     page = request.GET.get('page')
     try:
-        participants = paginator.page(page)
+        predictors = paginator.page(page)
     except (PageNotAnInteger, EmptyPage):
-        participants = paginator.page(1)
+        predictors = paginator.page(1)
 
     leaderboard = []
-    for participant in participants:
-        leaderboard.append((participant.get_url(),
-                            participant.user.profile.get_name(),
-                            participant.score,
-                            participant.margin_per_match))
-
+    for predictor in predictors:
+        leaderboard.append((predictor.get_url(),
+                            predictor.get_name(),
+                            predictor.score,
+                            predictor.margin_per_match))
 
     current_site = get_current_site(request)
     template = loader.get_template('table.html')
@@ -169,7 +168,7 @@ def table(request, tour_name):
         'TOURNAMENT': tournament,
         'is_participant': is_participant,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
-        'participants': participants,
+        'participants': predictors,
 	'competitions': competitions,
         'has_benchmark': tournament.benchmark_set.count(),
     }
@@ -333,7 +332,7 @@ def match(request, match_pk):
 
 
 @login_required
-def benchmark(request, tour_name):
+def benchmark_table(request, tour_name):
     tournament = get_object_or_404(Tournament, name=tour_name)
 
     try:
@@ -367,7 +366,6 @@ def benchmark(request, tour_name):
                             predictor.score,
                             predictor.margin_per_match))
 
-
     current_site = get_current_site(request)
     template = loader.get_template('table.html')
     context = {
@@ -377,5 +375,31 @@ def benchmark(request, tour_name):
         'is_participant': True,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
         'participants': predictors,
+    }
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def benchmark(request, benchmark_pk):
+    benchmark = get_object_or_404(Benchmark, pk=benchmark_pk)
+    tournament = benchmark.tournament
+
+    if not tournament.participants.filter(pk=request.user.pk).exists():
+        raise Http404("User is not a Participant")
+
+    predictions = benchmark.benchmarkprediction_set.filter(
+            match__kick_off__lt=timezone.now(),
+            match__postponed=False).order_by('-match__kick_off')
+
+    current_site = get_current_site(request)
+    template = loader.get_template('predictions.html')
+    context = {
+        'site_name': current_site.name,
+        'other_user': 'Benchmark "%s"' % benchmark.name,
+        'user_score': benchmark.score,
+        'TOURNAMENT': tournament,
+        'predictions': predictions,
+        'is_participant': True,
+        'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))

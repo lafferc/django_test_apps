@@ -509,6 +509,9 @@ class Benchmark(Predictor):
             print("%s did not predict %s" % (self, match))
             return self.predict(match)
 
+    def get_url(self):
+        return reverse('competition:benchmark', args=(self.pk,))
+
 
 class BenchmarkPrediction(PredictionBase):
     benchmark = models.ForeignKey(Benchmark)
