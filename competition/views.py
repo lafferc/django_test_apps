@@ -301,7 +301,7 @@ def match(request, match_pk):
     allow_benchmarks = False
     show_benchmarks = False
     if (request.user.profile.test_features_enabled
-            or tournament.test_features_enabled):
+            or match.tournament.test_features_enabled):
         allow_benchmarks = True
 
     if match.has_started():
