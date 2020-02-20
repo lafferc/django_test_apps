@@ -410,6 +410,9 @@ class PredictionBase(models.Model):
             return self.match.tournament.bonus * self.match.tournament.draw_bonus
         return self.match.tournament.bonus
 
+    def get_predictor(self):
+        raise NotImplementedError("%s didn't override get_predictor" % self.__class__)
+
     class Meta:
         abstract = True
 
@@ -426,6 +429,9 @@ class Prediction(PredictionBase):
         if self.late and not self.match.tournament.late_get_bonus:
             return 0
         return super(Prediction, self).bonus(result)
+
+    def get_predictor(self):
+        return self.match.tournament.participant_set.get(user=self.user)
 
     class Meta:
         unique_together = ('user', 'match',)
@@ -518,6 +524,9 @@ class BenchmarkPrediction(PredictionBase):
 
     def __str__(self):
         return "%s: %s" % (self.benchmark, self.match)
+
+    def get_predictor(self):
+        return self.benchmark
 
     class Meta:
         unique_together = ('benchmark', 'match',)

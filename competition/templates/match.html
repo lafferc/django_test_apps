@@ -93,7 +93,7 @@ Result: {{ match.score }}
         </tr>
     {% for prediction in predictions %}
         <tr>
-            <td>{{ prediction.user.profile.get_name }}</td>
+            <td>{{ prediction.get_predictor.get_name }}</td>
             <td>{{ prediction.prediction }}</td>
         {% if match.score != None %}
             <td>{{ prediction.score }}</td>

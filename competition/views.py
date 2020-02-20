@@ -298,13 +298,29 @@ def match(request, match_pk):
     if not match.tournament.participants.filter(pk=request.user.pk).exists():
         raise Http404("User is not a Participant")
 
-    if match.has_started():
-        if match.score is not None:
-            matches = match.prediction_set.all().order_by('score')
-        else:
-            matches = match.prediction_set.all()
+    allow_benchmarks = False
+    show_benchmarks = False
+    if (request.user.profile.test_features_enabled
+            or tournament.test_features_enabled):
+        allow_benchmarks = True
 
-        paginator = Paginator(matches, 20)
+    if match.has_started():
+        if match.score is None:
+            prediction_list = match.prediction_set.all()
+        else:
+            if allow_benchmarks:
+                show_benchmarks = request.GET.get('benchmarks')
+
+            if show_benchmarks:
+                prediction_list = sorted(
+                        chain(
+                            match.prediction_set.all(),
+                            match.benchmarkprediction_set.all()),
+                        key=lambda obj: obj.score)
+            else:
+                prediction_list = match.prediction_set.all().order_by('score')
+
+        paginator = Paginator(prediction_list, 20)
         try:
             predictions = paginator.page(request.GET.get('page'))
         except (PageNotAnInteger, EmptyPage):
