@@ -1,3 +1,4 @@
+{% load static %}
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
@@ -8,6 +9,7 @@
             });
     </script>
     <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <link rel="stylesheet" href="{% static "css/messages.css" %}" type="text/css">
 
 {% block sub_head %}
 {% endblock %}
@@ -26,6 +28,15 @@
 {% block nav %}
 {% endblock %}
         </div><!-- /header -->
+
+    {% if messages %}
+    <ul class="messagelist">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
         <div role="main" class="ui-content jqm-content jqm-fullwidth" style="display: grid; grid-template-columns: auto auto auto;">
             <div style="grid-column-start: 2;">
 {% block content %}

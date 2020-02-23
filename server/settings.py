@@ -107,6 +107,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = '/var/www/static'
 
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'server/static'),
+]
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

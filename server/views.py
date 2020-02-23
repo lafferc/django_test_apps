@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string, get_template
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -8,6 +9,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.translation import gettext as _
 import datetime
 from itertools import chain
 
@@ -86,6 +88,8 @@ def signup(request):
             })
             user.email_user(subject, message)
             return redirect('activation_sent')
+	else:
+	    messages.error(request, _('Please correct the error below.'))
     else:
         form = SignUpForm()
         profile_form = ProfileAddForm()

@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
+from django.utils.translation import gettext as _
 from .models import Profile, Ticket, Competition
 from .forms import ProfileEditForm, NameChangeForm
 from competition.models import Participant
@@ -23,10 +24,10 @@ def profile(request):
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
-            # messages.success(request, _('Your profile was successfully updated!'))
+            messages.success(request, _('Your profile was successfully updated!'))
             return redirect('member:profile')
-        # else:
-            # messages.error(request, _('Please correct the error below.'))
+        else:
+            messages.error(request, _('Please correct the error below.'))
     else:
         user_form = NameChangeForm(instance=request.user)
         profile_form = ProfileEditForm(instance=request.user.profile)
