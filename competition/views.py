@@ -1,13 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.template import loader
+from django.template.defaultfilters import pluralize
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import IntegrityError
 from django.db.models import Q
+from django.utils import timezone
+from django.utils.translation import gettext as _
 
 import decimal
 from itertools import chain
@@ -42,11 +45,16 @@ def submit(request, tour_name):
             tournament=tournament).order_by('kick_off')
 
     if request.method == 'POST':
+        created = 0
         for match in fixture_list:
             try:
                 Prediction(user=request.user, match=match, prediction=float(request.POST[str(match.pk)])).save()
+                created += 1
             except (ValueError, KeyError, IntegrityError):
                 continue
+        messages.add_message(request,
+                messages.SUCCESS if created else messages.ERROR,
+                _("%d prediction" % created + pluralize(created) + " submited"))
 
     for prediction in Prediction.objects.filter(user=request.user):
         if prediction.match in fixture_list:
@@ -93,8 +101,9 @@ def predictions(request, tour_name):
             if prediction.prediction != prediction_prediction:
                 prediction.prediction = prediction_prediction
                 prediction.save()
+                messages.success(request, _("prediction updated"))
         except (KeyError, ValueError, Prediction.DoesNotExist):
-            pass
+            messages.error(request, _("prediction failed to be updated"))
     elif request.GET:
         try:
             other_user = User.objects.get(username=request.GET['user'])
@@ -217,6 +226,7 @@ def join(request, tour_name):
     if request.method == 'POST':
         try:
             Participant.objects.create(user=request.user, tournament=tournament)
+            messages.success(request, _("You have joined the competition"))
         except IntegrityError:
             pass
         return redirect('competition:submit' , tour_name=tour_name)
@@ -250,12 +260,17 @@ def results(request, tour_name):
 
     if request.method == 'POST':
         for match in fixture_list:
+            submited = 0
             try:
                 match.score = decimal.Decimal(float(request.POST[str(match.pk)]))
                 fixture_list = fixture_list.exclude(pk=match.pk)
                 match.save()
+                submited += 1
             except (ValueError, KeyError):
                 pass
+            messages.add_message(request,
+                    messages.SUCCESS if submited else messages.ERROR,
+                    _("%d result" % submited + pluralize(submited) + " submited"))
 
     current_site = get_current_site(request)
     template = loader.get_template('match_results.html')

@@ -59,13 +59,16 @@ def use_token(request):
                 participant = Participant(user=request.user,
                                           tournament=tourn)
                 participant.save()
+                messages.success(request, _("You have joined the competition"))
             ticket.competition.participants.add(participant)
             ticket.save()
+            messages.success(request, _("Ticket accepted"))
             return redirect('competition:org_table',
                             tour_name=tourn.name,
                             org_name=ticket.competition.organisation.name)
         except Exception:
             g_logger.exception("Failed to process token")
+            messages.error(request, _("Ticket not accepted"))
 
     template = loader.get_template('token.html')
     current_site = get_current_site(request)
