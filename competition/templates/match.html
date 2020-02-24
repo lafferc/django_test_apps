@@ -93,7 +93,7 @@ Result: {{ match.score }}
         </tr>
     {% for prediction in predictions %}
         <tr>
-            <td>{{ prediction.user.profile.get_name }}</td>
+            <td>{{ prediction.get_predictor.get_name }}</td>
             <td>{{ prediction.prediction }}</td>
         {% if match.score != None %}
             <td>{{ prediction.score }}</td>
@@ -104,7 +104,11 @@ Result: {{ match.score }}
     <div class="pagination">
         <span class="step-links">
     {% if predictions.has_previous %}
-                <a href="?page={{ predictions.previous_page_number }}">previous</a>
+        {% if show_benchmarks %}
+            <a href="?benchmarks=show&page={{ predictions.previous_page_number }}">previous</a>
+        {% else %}
+            <a href="?page={{ predictions.previous_page_number }}">previous</a>
+        {% endif %}
     {% endif %}
     
             <span class="current">
@@ -112,9 +116,16 @@ Result: {{ match.score }}
             </span>
     
     {% if predictions.has_next %}
-                <a href="?page={{ predictions.next_page_number }}">next</a>
+        {% if show_benchmarks %}
+            <a href="?benchmarks=show&page={{ predictions.next_page_number }}">next</a>
+        {% else %}
+            <a href="?page={{ predictions.next_page_number }}">next</a>
+        {% endif %}
     {% endif %}
         </span>
     </div>
+    {% if display_benchmark_link and match.score != None %}
+        <a href="?benchmarks=show&page={{ predictions.number }}">Show benchmarks</a>
+    {% endif %}
 {% endif %}
 {% endblock %}
