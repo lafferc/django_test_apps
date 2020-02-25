@@ -1,0 +1,9 @@
+[flake8]
+ignore = 
+exclude =
+    .git,
+    __pycache__,
+    migrations,
+    utils,
+    test,
+    tests.py
