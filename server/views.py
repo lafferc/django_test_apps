@@ -1,12 +1,11 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse
 from django.template.loader import render_to_string, get_template
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.shortcuts import get_current_site
-from django.utils import timezone
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.translation import gettext as _
@@ -30,28 +29,28 @@ def index(request):
     for tourn in live_tournaments:
         if not tourn.participants.filter(pk=request.user.pk).exists():
             continue
-        searchs.append(Match.objects.filter(tournament=tourn, 
-                                            kick_off__year=today.year, 
-                                            kick_off__month=today.month, 
+        searchs.append(Match.objects.filter(tournament=tourn,
+                                            kick_off__year=today.year,
+                                            kick_off__month=today.month,
                                             kick_off__day=today.day,
                                             postponed=False))
     matches_today = sorted(
-                chain(*searchs),
-                    key=lambda instance: instance.kick_off)
+        chain(*searchs),
+        key=lambda instance: instance.kick_off)
 
     searchs = []
     tomorrow = datetime.date.today() + datetime.timedelta(days=1)
     for tourn in live_tournaments:
         if not tourn.participants.filter(pk=request.user.pk).exists():
             continue
-        searchs.append(Match.objects.filter(tournament=tourn, 
-                                            kick_off__year=tomorrow.year, 
-                                            kick_off__month=tomorrow.month, 
+        searchs.append(Match.objects.filter(tournament=tourn,
+                                            kick_off__year=tomorrow.year,
+                                            kick_off__month=tomorrow.month,
                                             kick_off__day=tomorrow.day,
                                             postponed=False))
     matches_tomorrow = sorted(
-                chain(*searchs),
-                    key=lambda instance: instance.kick_off)
+        chain(*searchs),
+        key=lambda instance: instance.kick_off)
 
     context = {
         'site_name': current_site.name,
@@ -88,15 +87,15 @@ def signup(request):
             })
             user.email_user(subject, message)
             return redirect('activation_sent')
-	else:
-	    messages.error(request, _('Please correct the error below.'))
+        else:
+            messages.error(request, _('Please correct the error below.'))
     else:
         form = SignUpForm()
         profile_form = ProfileAddForm()
 
     context = {
         'site_name': current_site.name,
-	'form': form,
+        'form': form,
         'profile_form': profile_form,
     }
 
