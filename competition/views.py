@@ -315,6 +315,7 @@ def match(request, match_pk):
 
     allow_benchmarks = False
     show_benchmarks = False
+
     if (request.user.profile.test_features_enabled
             or match.tournament.test_features_enabled):
         allow_benchmarks = True
@@ -334,6 +335,7 @@ def match(request, match_pk):
                         key=lambda obj: obj.score)
             else:
                 prediction_list = match.prediction_set.all().order_by('score')
+
 
         paginator = Paginator(prediction_list, 20)
         try:
@@ -358,6 +360,8 @@ def match(request, match_pk):
         'predictions': predictions,
         'match': match,
         'prediction': user_prediction,
+        'show_benchmarks': show_benchmarks,
+        'display_benchmark_link': allow_benchmarks and not show_benchmarks,
     }
     return HttpResponse(template.render(context, request))
 
