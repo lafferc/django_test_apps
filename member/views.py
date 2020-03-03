@@ -1,14 +1,13 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.template import loader
 from django.contrib.auth.decorators import login_required, permission_required
-from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.translation import gettext as _
-from .models import Profile, Ticket, Competition
+from .models import Ticket, Competition
 from .forms import ProfileEditForm, NameChangeForm
 from competition.models import Participant
 import logging
@@ -87,7 +86,7 @@ def announcement(request):
         try:
             subject = request.POST["subject"]
             body = request.POST["message"]
-            test_flag = request.POST["test_email"]  == "true"
+            test_flag = request.POST["test_email"] == "true"
         except KeyError:
             test_flag = False
 
