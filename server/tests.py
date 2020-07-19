@@ -1,9 +1,10 @@
 from django.contrib.auth.models import User
 from django.core import mail
 from django.test import TestCase
+from django.core.urlresolvers import reverse
 import unittest
 import re
-#import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()
 
 class ServerViewTest (TestCase):
 
@@ -13,19 +14,21 @@ class ServerViewTest (TestCase):
         test_user1 = User.objects.create_user(username='testuser1', password='test123')
         test_user1.save()
 
-    def test_index_logged_out(self):
+    def test_index(self):
         response = self.client.get('/')
         self.assertRedirects(response, '/accounts/login/?next=/')
 
-    def test_index_logged_in(self):
         login = self.client.login(username='testuser1', password='test123')
         self.assertTrue(login)
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
 
+        self.assertTemplateUsed(response, 'home.html')
+
     def test_signup_logged_out(self):
         response = self.client.get('/register/')
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/register.html')
 
     def test_activate_logged_out(self):
         response = self.client.get('/activate/')
@@ -34,10 +37,24 @@ class ServerViewTest (TestCase):
     def test_about_logged_out(self):
         response = self.client.get('/about/')
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'about.html')
 
     def test_gdpr_logged_out(self):
         response = self.client.get('/gdpr/')
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'gdpr.html')
+
+    def test_login_logout(self):
+        login = self.client.login(username='testuser1', password='test123')
+        self.assertTrue(login)
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get('/accounts/logout/')
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get('/')
+        self.assertRedirects(response, '/accounts/login/?next=/')
 
 
 class SignupTest(TestCase):
@@ -94,7 +111,8 @@ class SignupTest(TestCase):
     @unittest.skip("500 server error")
     def test_signup_duplicate_username(self):
 
-        user = User.objects.get(username='testuser1')
+        users = User.objects.filter(username='testuser1')
+        self.assertEqual(len(users), 1)
 
         response = self.client.post('/register/', {
             'username': 'testuser1',
@@ -106,6 +124,11 @@ class SignupTest(TestCase):
             })
 
         self.assertEqual(len(mail.outbox), 0)
+
+        users = User.objects.filter(username='testuser1')
+        self.assertEqual(len(users), 1)
+
+        self.assertEqual(users[0].email, 'test@example.com')
 
         login = self.client.login(username='testuser1', password='password')
         self.assertFalse(login)
@@ -124,16 +147,12 @@ class SignupTest(TestCase):
             })
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.templates[0].name, 'registration/register.html')
+        self.assertTemplateUsed(response, 'registration/register.html')
 
         self.assertEqual(len(mail.outbox), 0)
 
-        try:
-            user = User.objects.get(username='new_user')
-        except User.DoesNotExist:
-            user = None
-
-        self.assertIsNone(user)
+        users = User.objects.filter(username='new_user')
+        self.assertEqual(len(users), 0)
 
         login = self.client.login(username='new_user', password='password')
         self.assertFalse(login)
@@ -149,14 +168,12 @@ class SignupTest(TestCase):
             })
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.templates[0].name, 'registration/register.html')
+        self.assertTemplateUsed(response, 'registration/register.html')
 
         self.assertEqual(len(mail.outbox), 0)
 
-        try:
-            user = User.objects.get(username='new_user')
-        except User.DoesNotExist:
-            user = None
+        users = User.objects.filter(username='new_user')
+        self.assertEqual(len(users), 0)
 
         self.assertIsNone(user)
 
