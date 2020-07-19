@@ -175,8 +175,6 @@ class SignupTest(TestCase):
         users = User.objects.filter(username='new_user')
         self.assertEqual(len(users), 0)
 
-        self.assertIsNone(user)
-
         login = self.client.login(username='new_user', password='password1')
         self.assertFalse(login)
 
