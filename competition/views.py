@@ -268,8 +268,8 @@ def results(request, tour_name):
                                         ).order_by('kick_off')
 
     if request.method == 'POST':
+        submited = 0
         for match in fixture_list:
-            submited = 0
             try:
                 match.score = decimal.Decimal(float(request.POST[str(match.pk)]))
                 fixture_list = fixture_list.exclude(pk=match.pk)
@@ -277,9 +277,9 @@ def results(request, tour_name):
                 submited += 1
             except (ValueError, KeyError):
                 pass
-            messages.add_message(request,
-                                 messages.SUCCESS if submited else messages.ERROR,
-                                 _("%d result" % submited + pluralize(submited) + " submited"))
+        messages.add_message(request,
+                             messages.SUCCESS if submited else messages.ERROR,
+                             _("%d result" % submited + pluralize(submited) + " submited"))
 
     current_site = get_current_site(request)
     template = loader.get_template('match_results.html')
@@ -390,7 +390,7 @@ def benchmark_table(request, tour_name):
 
     sorted_list = sorted(chain(participant_list,
                                benchmark_list),
-                         key=lambda obj: obj.score)
+                         key=lambda obj: obj.score or 0)
 
     paginator = Paginator(sorted_list, 20)
     page = request.GET.get('page')
