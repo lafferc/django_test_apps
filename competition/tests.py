@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Permission
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
@@ -233,26 +233,65 @@ class CompetitionViewNotParticipantTest(TestCase):
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
 
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'match_results.html')
+
     def test_results_active(self):
         url = reverse('competition:results', kwargs={'tour_name':'active_tourn'})
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
+
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'match_results.html')
 
     def test_results_finished(self):
         url = reverse('competition:results', kwargs={'tour_name':'finished_tourn'})
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
 
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'match_results.html')
+
     def test_results_archived(self):
         url = reverse('competition:results', kwargs={'tour_name':'archived_tourn'})
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
+
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'match_results.html')
 
     def test_rules_pending(self):
         url = reverse('competition:rules', kwargs={'tour_name':'pending_tourn'})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'display_rules.html')
+
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
     def test_rules_active(self):
         url = reverse('competition:rules', kwargs={'tour_name':'active_tourn'})
@@ -475,20 +514,52 @@ class CompetitionViewTest(TestCase):
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
 
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'match_results.html')
+
     def test_results_active(self):
         url = reverse('competition:results', kwargs={'tour_name':'active_tourn'})
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
+
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'match_results.html')
 
     def test_results_finished(self):
         url = reverse('competition:results', kwargs={'tour_name':'finished_tourn'})
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
 
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'match_results.html')
+
     def test_results_archived(self):
         url = reverse('competition:results', kwargs={'tour_name':'archived_tourn'})
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
+
+        permission = Permission.objects.get(name='Can change match')
+        user = User.objects.get(username='testuser1')
+        user.user_permissions.add(permission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'match_results.html')
 
     def test_rules_pending(self):
         url = reverse('competition:rules', kwargs={'tour_name':'pending_tourn'})
