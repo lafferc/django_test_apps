@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User, Permission
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
@@ -38,7 +39,8 @@ class MemberViewTest(TestCase):
 
         sport = Sport.objects.create(name='sport')
         tourn = Tournament.objects.create(name='active_tourn', sport=sport, state=Tournament.ACTIVE)
-        org = Organisation.objects.create(name="Test")
+        logo = SimpleUploadedFile('logo.png', content=open('member/test_logo.png', 'rb').read())
+        org = Organisation.objects.create(name="Test", logo=logo)
         comp = Competition.objects.create(organisation=org, tournament=tourn)
         Ticket.objects.create(competition=comp)
 
@@ -71,7 +73,6 @@ class MemberViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'announcement.html')
 
-    @unittest.skip("missing logo for org")
     def test_tickets(self):
         comp = Competition.objects.get(organisation__name="Test")
         url = reverse('member:tickets', kwargs={'comp_pk': comp.pk})
