@@ -31,3 +31,10 @@ jobs:
     - name: Test with django test
       run: |
           python manage.py test
+    - name: Coverage
+      run: |
+        pip install coverage
+        coverage erase
+        coverage run manage.py test
+        coverage report
+
