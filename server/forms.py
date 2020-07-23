@@ -15,6 +15,7 @@ class SignUpForm(UserCreationForm):
         fields = ('username', 'password1', 'password2', 'first_name', 'last_name', 'email', )
 
     def clean(self):
+        super(SignUpForm, self).clean()
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
             raise ValidationError("Email is not unique")

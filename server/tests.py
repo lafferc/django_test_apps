@@ -108,7 +108,6 @@ class SignupTest(TestCase):
         login = self.client.login(username='new_user', password='password')
         self.assertTrue(login)
 
-    @unittest.skip("500 server error")
     def test_signup_duplicate_username(self):
 
         users = User.objects.filter(username='testuser1')
