@@ -9,15 +9,17 @@
     <tr>
         <th>Cookie</th><th>Type</th><th>Usage</th>
     </tr>
-{% if user.is_authenticated %}
     <tr>
         <td>sessionid</td><td>functional</td><td>Used identify you while you're
             logged in so that you do not need to sign in on every page.</td>
     </tr>
-{% endif %}
     <tr>
         <td>csrftoken</td><td>functional</td><td>Used for security purposes to
             prevent Cross-site request forgery (CSRF) attacks.</td>
+    </tr>
+    <tr>
+        <td>Google reCAPTCHA</td><td>functional</td><td>Used to prevent bots 
+            from creating spam accounts. Only used on register page</td>
     </tr>
 </table>
 

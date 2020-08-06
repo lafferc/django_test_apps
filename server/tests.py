@@ -74,6 +74,7 @@ class SignupTest(TestCase):
             'email': 'new_user@example.com',
             'cookie_consent': 1,
             'display_name_format': 1,
+            'g-recaptcha-response': 'PASSED',
             })
 
         self.assertRedirects(response, '/register/activation_sent/')
@@ -120,6 +121,7 @@ class SignupTest(TestCase):
             'email': 'new_user@example.com',
             'cookie_consent': 1,
             'display_name_format': 1,
+            'g-recaptcha-response': 'PASSED',
             })
 
         self.assertEqual(len(mail.outbox), 0)
@@ -143,6 +145,7 @@ class SignupTest(TestCase):
             'email': 'test@example.com',
             'cookie_consent': 1,
             'display_name_format': 1,
+            'g-recaptcha-response': 'PASSED',
             })
 
         self.assertEqual(response.status_code, 200)
@@ -164,6 +167,7 @@ class SignupTest(TestCase):
             'email': 'new_user@example.com',
             'cookie_consent': 1,
             'display_name_format': 1,
+            'g-recaptcha-response': 'PASSED',
             })
 
         self.assertEqual(response.status_code, 200)
