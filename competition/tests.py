@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User, Permission
 from django.test import TestCase
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 
 import datetime
 import pytz
@@ -665,4 +666,100 @@ class CompetitionViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'predictions.html')
+
+
+class HomePageContent(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse('index')
+        sport = Sport.objects.create(name='sport')
+        tourn_a = Tournament.objects.create(name='tourn_A',
+                                            sport=sport,
+                                            state=Tournament.ACTIVE)
+        tourn_b = Tournament.objects.create(name='tourn_B',
+                                            sport=sport,
+                                            state=Tournament.ACTIVE)
+        tourn_c = Tournament.objects.create(name='tourn_C',
+                                  sport=sport,
+                                  state=Tournament.ACTIVE)
+        Tournament.objects.create(name='tourn_D',
+                                  sport=sport,
+                                  state=Tournament.FINISHED)
+
+        cls.tourns = [tourn_a, tourn_b, tourn_c]
+        cls.user = User.objects.create_user(username='testuser1', password='test123')
+        cls.user.save()
+
+        Participant.objects.create(user=cls.user, tournament=tourn_a)
+        Participant.objects.create(user=cls.user, tournament=tourn_b)
+
+        cls.team_a = Team.objects.create(name='team A', code='AAA', sport=sport)
+        cls.team_b = Team.objects.create(name='team B', code='BBB', sport=sport)
+
+        today = timezone.make_aware(datetime.datetime.combine(datetime.date.today(), datetime.time()))
+
+        cls.times_today = [
+            today + datetime.timedelta(hours=6),
+            today + datetime.timedelta(hours=12),
+            today + datetime.timedelta(hours=18),
+        ]
+        cls.times_tomorrow = [
+            today + datetime.timedelta(days=1, hours=6),
+            today + datetime.timedelta(days=1, hours=12),
+            today + datetime.timedelta(days=1, hours=18),
+        ]
+
+
+    def setUp(self):
+        login = self.client.login(username='testuser1', password='test123')
+        self.assertTrue(login)
+
+    def test_live_tournaments(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'home.html')
+
+        self.assertEqual(len(response.context['live_tournaments']), 3)
+        self.assertEqual(len(response.context['matches_today']), 0)
+        self.assertEqual(len(response.context['matches_tomorrow']), 0)
+
+    def test_todays_matches(self):
+        for tourn in self.tourns:
+            for time in self.times_today:
+                Match.objects.create(tournament=tourn, home_team=self.team_a, away_team=self.team_b, kick_off=time)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'home.html')
+
+        self.assertEqual(len(response.context['live_tournaments']), 3)
+        self.assertEqual(len(response.context['matches_today']), 6)
+        self.assertEqual(len(response.context['matches_tomorrow']), 0)
+
+    def test_tomorrows_matches(self):
+        for tourn in self.tourns:
+            for time in self.times_tomorrow:
+                Match.objects.create(tournament=tourn, home_team=self.team_a, away_team=self.team_b, kick_off=time)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'home.html')
+
+        self.assertEqual(len(response.context['live_tournaments']), 3)
+        self.assertEqual(len(response.context['matches_today']), 0)
+        self.assertEqual(len(response.context['matches_tomorrow']), 6)
+
+    def test_today_and_tomorrows_matches(self):
+        for tourn in self.tourns:
+            for time in self.times_today + self.times_tomorrow:
+                Match.objects.create(tournament=tourn, home_team=self.team_a, away_team=self.team_b, kick_off=time)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'home.html')
+
+        self.assertEqual(len(response.context['live_tournaments']), 3)
+        self.assertEqual(len(response.context['matches_today']), 6)
+        self.assertEqual(len(response.context['matches_tomorrow']), 6)
+
 
