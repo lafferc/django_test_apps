@@ -24,7 +24,7 @@ DEBUG = True
 
 if DEBUG:
     SECRET_KEY = "khslfkuwhelkrcakbclkjahlckrsbjac"
-else:
+else: # !DEBUG
     # SECURITY WARNING: keep the secret key used in production secret!
     SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
@@ -138,7 +138,7 @@ if DEBUG:
     EMAIL_PORT = 25
     EMAIL_HOST_USER = ''
     EMAIL_HOST_PASSWORD = ''
-else:
+else: # !DEBUG
     EMAIL_USE_TLS = True
     EMAIL_HOST = 'smtp.gmail.com'
     EMAIL_PORT = 587
