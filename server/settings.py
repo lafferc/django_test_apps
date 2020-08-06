@@ -24,7 +24,7 @@ DEBUG = True
 
 if DEBUG:
     SECRET_KEY = "khslfkuwhelkrcakbclkjahlckrsbjac"
-else:
+else: # !DEBUG
     # SECURITY WARNING: keep the secret key used in production secret!
     SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
@@ -42,6 +42,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'competition',
     'member',
+    'captcha',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -107,6 +108,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = '/var/www/static'
 
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'server/static'),
+]
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -134,7 +139,7 @@ if DEBUG:
     EMAIL_PORT = 25
     EMAIL_HOST_USER = ''
     EMAIL_HOST_PASSWORD = ''
-else:
+else: # !DEBUG
     EMAIL_USE_TLS = True
     EMAIL_HOST = 'smtp.gmail.com'
     EMAIL_PORT = 587
@@ -143,3 +148,9 @@ else:
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+if DEBUG:
+    SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
+else: # !DEBUG
+    RECAPTCHA_PUBLIC_KEY = os.getenv('RECAPTCHA_PUBLIC_KEY')
+    RECAPTCHA_PRIVATE_KEY = os.getenv('RECAPTCHA_PRIVATE_KEY')

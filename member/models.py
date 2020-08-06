@@ -10,31 +10,32 @@ from competition.models import Tournament, Participant
 
 g_logger = logging.getLogger(__name__)
 
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     dob = models.DateField(null=True, blank=True)
     display_name_format = models.IntegerField(
-            default=0,
-            choices=((0, "Full Name"),
-                     (1, "username"),
-                     (2, "user_id")),
-            help_text="This how other users will see you name displayed")
+        default=0,
+        choices=((0, "Full Name"),
+                 (1, "username"),
+                 (2, "user_id")),
+        help_text="This how other users will see you name displayed")
     can_receive_emails = models.BooleanField(
-            default=True,
-            help_text="Global email setting, if false the user will not receive any emails")
+        default=True,
+        help_text="Global email setting, if false the user will not receive any emails")
     email_on_new_competition = models.BooleanField(
-            default=True,
-            help_text="User will receive an email when new competitions are started")
+        default=True,
+        help_text="User will receive an email when new competitions are started")
     test_features_enabled = models.BooleanField(
-            default=False,
-            help_text="This user can use features that are under test")
+        default=False,
+        help_text="This user can use features that are under test")
     cookie_consent = models.PositiveIntegerField(
-            default=0,
-            choices=((0, "accept all cookies"),
-                     (1, "no advertising cookies"),
-                     (2, "functional cookies only")),
-            help_text="The user consents to the following level of cookies")
-    
+        default=0,
+        choices=((0, "accept all cookies"),
+                 (1, "no advertising cookies"),
+                 (2, "functional cookies only")),
+        help_text="The user consents to the following level of cookies")
+
     def get_name(self):
         if self.display_name_format == 0:
             name = "%s %s" % (self.user.first_name, self.user.last_name)
@@ -58,17 +59,19 @@ class Profile(models.Model):
             self.user.email_user(subject, message)
             return True
         except smtplib.SMTPRecipientsRefused:
-            g_logger.error("Recipient Refused:'%s' (user: %s)", 
+            g_logger.error("Recipient Refused:'%s' (user: %s)",
                            self.user.email, self.user)
             return False
 
     def __str__(self):
         return self.user.username
 
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
+
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):

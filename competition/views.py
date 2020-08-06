@@ -1,13 +1,16 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.template import loader
+from django.template.defaultfilters import pluralize
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import IntegrityError
 from django.db.models import Q
+from django.utils import timezone
+from django.utils.translation import gettext as _
 
 import decimal
 from itertools import chain
@@ -32,21 +35,28 @@ def submit(request, tour_name):
     tournament = get_object_or_404(Tournament, name=tour_name)
 
     if tournament.is_closed():
-        return redirect("competition:table", tour_name=tour_name) 
+        return redirect("competition:table", tour_name=tour_name)
 
     if not tournament.participants.filter(pk=request.user.pk).exists():
-        return redirect("competition:join", tour_name=tour_name) 
+        return redirect("competition:join", tour_name=tour_name)
 
     fixture_list = Match.objects.filter(
-            Q(postponed=True) | Q(kick_off__gt=timezone.now()),
-            tournament=tournament).order_by('kick_off')
+        Q(postponed=True) | Q(kick_off__gt=timezone.now()),
+        tournament=tournament).order_by('kick_off')
 
     if request.method == 'POST':
+        created = 0
         for match in fixture_list:
             try:
-                Prediction(user=request.user, match=match, prediction=float(request.POST[str(match.pk)])).save()
+                Prediction(user=request.user, match=match,
+                           prediction=float(request.POST[str(match.pk)])
+                           ).save()
+                created += 1
             except (ValueError, KeyError, IntegrityError):
                 continue
+        messages.add_message(request,
+                             messages.SUCCESS if created else messages.ERROR,
+                             _("%d prediction" % created + pluralize(created) + " submited"))
 
     for prediction in Prediction.objects.filter(user=request.user):
         if prediction.match in fixture_list:
@@ -63,12 +73,13 @@ def submit(request, tour_name):
     template = loader.get_template('submit.html')
     context = {
         'site_name': current_site.name,
-        'TOURNAMENT' : tournament,
+        'TOURNAMENT': tournament,
         'fixture_list': fixture_list,
         'is_participant': True,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
     }
     return HttpResponse(template.render(context, request))
+
 
 @login_required
 def predictions(request, tour_name):
@@ -93,15 +104,20 @@ def predictions(request, tour_name):
             if prediction.prediction != prediction_prediction:
                 prediction.prediction = prediction_prediction
                 prediction.save()
+                messages.success(request, _("prediction updated"))
         except (KeyError, ValueError, Prediction.DoesNotExist):
-            pass
+            messages.error(request, _("prediction failed to be updated"))
     elif request.GET:
         try:
             other_user = User.objects.get(username=request.GET['user'])
             if other_user == request.user:
                 other_user = None
             else:
-                predictions = Prediction.objects.filter(user=other_user, match__tournament=tournament, match__kick_off__lt=timezone.now(), match__postponed=False).order_by('-match__kick_off')
+                predictions = Prediction.objects.filter(user=other_user,
+                                                        match__tournament=tournament,
+                                                        match__kick_off__lt=timezone.now(),
+                                                        match__postponed=False
+                                                        ).order_by('-match__kick_off')
                 other_user = other_user.profile.get_name()
         except User.DoesNotExist:
             print("User(%s) tried to look at %s's predictions but '%s' does not exist"
@@ -113,7 +129,9 @@ def predictions(request, tour_name):
         if not is_participant:
             return redirect("competition:table", tour_name=tour_name)
         user_score = Participant.objects.get(user=request.user, tournament=tournament).score
-        predictions = Prediction.objects.filter(user=request.user, match__tournament=tournament).order_by('-match__kick_off')
+        predictions = Prediction.objects.filter(user=request.user,
+                                                match__tournament=tournament
+                                                ).order_by('-match__kick_off')
 
     current_site = get_current_site(request)
     template = loader.get_template('predictions.html')
@@ -137,7 +155,7 @@ def table(request, tour_name):
         is_participant = True
     except Participant.DoesNotExist:
         if not tournament.is_closed():
-            return redirect("competition:join", tour_name=tour_name) 
+            return redirect("competition:join", tour_name=tour_name)
         is_participant = False
 
     if is_participant:
@@ -169,7 +187,7 @@ def table(request, tour_name):
         'is_participant': is_participant,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
         'participants': predictors,
-	'competitions': competitions,
+        'competitions': competitions,
         'has_benchmark': tournament.benchmark_set.count(),
     }
     return HttpResponse(template.render(context, request))
@@ -180,7 +198,7 @@ def org_table(request, tour_name, org_name):
     tournament = get_object_or_404(Tournament, name=tour_name)
     participant = get_object_or_404(Participant, tournament=tournament, user=request.user)
     try:
-        comp =  participant.competition_set.get(organisation__name=org_name)
+        comp = participant.competition_set.get(organisation__name=org_name)
         competitions = participant.competition_set.all().exclude(pk=comp.pk)
         competitions = [comp] + [c for c in competitions]
     except Competition.DoesNotExist:
@@ -202,7 +220,7 @@ def org_table(request, tour_name, org_name):
         'is_participant': True,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
         'participants': participants,
-	'competitions': competitions,
+        'competitions': competitions,
     }
     return HttpResponse(template.render(context, request))
 
@@ -212,14 +230,15 @@ def join(request, tour_name):
     tournament = get_object_or_404(Tournament, name=tour_name)
 
     if tournament.is_closed():
-        return redirect("competition:table", tour_name=tour_name) 
+        return redirect("competition:table", tour_name=tour_name)
 
     if request.method == 'POST':
         try:
             Participant.objects.create(user=request.user, tournament=tournament)
+            messages.success(request, _("You have joined the competition"))
         except IntegrityError:
             pass
-        return redirect('competition:submit' , tour_name=tour_name)
+        return redirect('competition:submit', tour_name=tour_name)
 
     current_site = get_current_site(request)
     template = loader.get_template('join.html')
@@ -249,13 +268,18 @@ def results(request, tour_name):
                                         ).order_by('kick_off')
 
     if request.method == 'POST':
+        submited = 0
         for match in fixture_list:
             try:
                 match.score = decimal.Decimal(float(request.POST[str(match.pk)]))
                 fixture_list = fixture_list.exclude(pk=match.pk)
                 match.save()
+                submited += 1
             except (ValueError, KeyError):
                 pass
+        messages.add_message(request,
+                             messages.SUCCESS if submited else messages.ERROR,
+                             _("%d result" % submited + pluralize(submited) + " submited"))
 
     current_site = get_current_site(request)
     template = loader.get_template('match_results.html')
@@ -276,7 +300,7 @@ def rules(request, tour_name):
     is_participant = True
     if not tournament.participants.filter(pk=request.user.pk).exists():
         if tournament.state == Tournament.ACTIVE:
-            return redirect("competition:join", tour_name=tour_name) 
+            return redirect("competition:join", tour_name=tour_name)
         is_participant = False
 
     current_site = get_current_site(request)
@@ -301,8 +325,7 @@ def match(request, match_pk):
     allow_benchmarks = False
     show_benchmarks = False
 
-    if (request.user.profile.test_features_enabled
-            or match.tournament.test_features_enabled):
+    if request.user.profile.test_features_enabled or match.tournament.test_features_enabled:
         allow_benchmarks = True
 
     if match.has_started():
@@ -314,13 +337,12 @@ def match(request, match_pk):
 
             if show_benchmarks:
                 prediction_list = sorted(
-                        chain(
-                            match.prediction_set.all(),
-                            match.benchmarkprediction_set.all()),
-                        key=lambda obj: obj.score)
+                    chain(
+                        match.prediction_set.all(),
+                        match.benchmarkprediction_set.all()),
+                    key=lambda obj: obj.score)
             else:
                 prediction_list = match.prediction_set.all().order_by('score')
-
 
         paginator = Paginator(prediction_list, 20)
         try:
@@ -356,12 +378,11 @@ def benchmark_table(request, tour_name):
     tournament = get_object_or_404(Tournament, name=tour_name)
 
     try:
-        participant = Participant.objects.get(tournament=tournament, user=request.user)
+        Participant.objects.get(tournament=tournament, user=request.user)
     except Participant.DoesNotExist:
-        return redirect("competition:join", tour_name=tour_name) 
+        return redirect("competition:join", tour_name=tour_name)
 
-    if not (request.user.profile.test_features_enabled
-            or tournament.test_features_enabled):
+    if not (request.user.profile.test_features_enabled or tournament.test_features_enabled):
         raise Http404("User does not have test features enabled")
 
     participant_list = tournament.participant_set.all()
@@ -369,7 +390,7 @@ def benchmark_table(request, tour_name):
 
     sorted_list = sorted(chain(participant_list,
                                benchmark_list),
-                         key=lambda obj: obj.score)
+                         key=lambda obj: obj.score or 0)
 
     paginator = Paginator(sorted_list, 20)
     page = request.GET.get('page')
@@ -377,7 +398,6 @@ def benchmark_table(request, tour_name):
         predictors = paginator.page(page)
     except (PageNotAnInteger, EmptyPage):
         predictors = paginator.page(1)
-
 
     leaderboard = []
     for predictor in predictors:
@@ -408,8 +428,8 @@ def benchmark(request, benchmark_pk):
         raise Http404("User is not a Participant")
 
     predictions = benchmark.benchmarkprediction_set.filter(
-            match__kick_off__lt=timezone.now(),
-            match__postponed=False).order_by('-match__kick_off')
+        match__kick_off__lt=timezone.now(),
+        match__postponed=False).order_by('-match__kick_off')
 
     current_site = get_current_site(request)
     template = loader.get_template('predictions.html')

@@ -1,13 +1,13 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.template import loader
 from django.contrib.auth.decorators import login_required, permission_required
-from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
-from .models import Profile, Ticket, Competition
+from django.utils.translation import gettext as _
+from .models import Ticket, Competition
 from .forms import ProfileEditForm, NameChangeForm
 from competition.models import Participant
 import logging
@@ -23,10 +23,10 @@ def profile(request):
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
-            # messages.success(request, _('Your profile was successfully updated!'))
+            messages.success(request, _('Your profile was successfully updated!'))
             return redirect('member:profile')
-        # else:
-            # messages.error(request, _('Please correct the error below.'))
+        else:
+            messages.error(request, _('Please correct the error below.'))
     else:
         user_form = NameChangeForm(instance=request.user)
         profile_form = ProfileEditForm(instance=request.user.profile)
@@ -58,13 +58,16 @@ def use_token(request):
                 participant = Participant(user=request.user,
                                           tournament=tourn)
                 participant.save()
+                messages.success(request, _("You have joined the competition"))
             ticket.competition.participants.add(participant)
             ticket.save()
+            messages.success(request, _("Ticket accepted"))
             return redirect('competition:org_table',
                             tour_name=tourn.name,
                             org_name=ticket.competition.organisation.name)
         except Exception:
             g_logger.exception("Failed to process token")
+            messages.error(request, _("Ticket not accepted"))
 
     template = loader.get_template('token.html')
     current_site = get_current_site(request)
@@ -83,7 +86,7 @@ def announcement(request):
         try:
             subject = request.POST["subject"]
             body = request.POST["message"]
-            test_flag = request.POST["test_email"]  == "true"
+            test_flag = request.POST["test_email"] == "true"
         except KeyError:
             test_flag = False
 
