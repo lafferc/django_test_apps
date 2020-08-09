@@ -69,7 +69,8 @@ class SignupTest(TestCase):
         test_user1.save()
 
     def test_signup(self):
-        response = self.client.post('/register/', {
+        url = reverse('signup')
+        response = self.client.post(url, {
             'username': 'new_user',
             'password1': 'password',
             'password2': 'password',

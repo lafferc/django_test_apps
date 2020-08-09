@@ -34,8 +34,8 @@ class MemberViewLoggedOutTest(TestCase):
 class MemberViewTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        test_user1 = User.objects.create_user(username='testuser1', password='test123')
-        test_user1.save()
+        cls.user = User.objects.create_user(username='testuser1', password='test123')
+        cls.user.save()
 
         sport = Sport.objects.create(name='sport')
         tourn = Tournament.objects.create(name='active_tourn', sport=sport, state=Tournament.ACTIVE)
@@ -53,6 +53,44 @@ class MemberViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'profile.html')
+
+    def test_profile_update(self):
+        self.assertEqual(self.user.profile.get_name(), 'testuser1')
+        url = reverse('member:profile')
+        response = self.client.post(url, {
+            'first_name': 'Test1',
+            'last_name': 'User',
+            'display_name_format': 0,
+            'can_receive_emails': 1,
+            'email_on_new_competition': 1,
+            'cookie_consent': 0,
+        })
+        self.assertRedirects(response, url)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.profile.get_name(), 'Test1 User')
+
+        response = self.client.post(url, {
+            'display_name_format': 1,
+            'can_receive_emails': 1,
+            'email_on_new_competition': 1,
+            'cookie_consent': 0,
+        })
+        self.assertRedirects(response, url)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.profile.get_name(), 'testuser1')
+
+        response = self.client.post(url, {
+            'display_name_format': 2,
+            'can_receive_emails': 1,
+            'email_on_new_competition': 1,
+            'cookie_consent': 0,
+        })
+        self.assertRedirects(response, url)
+
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.get_name(), 'user_1')
 
     def test_use_token(self):
         url = reverse('member:use_token')
