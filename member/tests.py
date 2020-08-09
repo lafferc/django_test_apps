@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User, Permission
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.test import TestCase
@@ -6,7 +7,7 @@ from django.test import TestCase
 import unittest
 
 from .models import Organisation, Competition, Ticket
-from competition.models import Tournament, Sport
+from competition.models import Tournament, Sport, Participant
 
 
 class MemberViewLoggedOutTest(TestCase):
@@ -38,11 +39,11 @@ class MemberViewTest(TestCase):
         cls.user.save()
 
         sport = Sport.objects.create(name='sport')
-        tourn = Tournament.objects.create(name='active_tourn', sport=sport, state=Tournament.ACTIVE)
+        cls.tourn = Tournament.objects.create(name='active_tourn', sport=sport, state=Tournament.ACTIVE)
         logo = SimpleUploadedFile('logo.png', content=open('member/test_logo.png', 'rb').read())
-        org = Organisation.objects.create(name="Test", logo=logo)
-        comp = Competition.objects.create(organisation=org, tournament=tourn)
-        Ticket.objects.create(competition=comp)
+        cls.org = Organisation.objects.create(name="Test", logo=logo)
+        cls.comp = Competition.objects.create(organisation=cls.org, tournament=cls.tourn)
+        cls.ticket = Ticket.objects.create(competition=cls.comp)
 
     def setUp(self):
         login = self.client.login(username='testuser1', password='test123')
@@ -98,18 +99,65 @@ class MemberViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'token.html')
 
+    def test_use_token_post(self):
+        url = reverse('member:use_token')
+        r_url = reverse('competition:org_table', kwargs={'tour_name': self.tourn.name,
+                                                         'org_name': self.org.name})
+        self.ticket.refresh_from_db()
+        self.assertFalse(self.ticket.used)
+        count_before = len(Participant.objects.filter(tournament=self.tourn))
+
+        response = self.client.post(url, {
+            'token': self.ticket.token,
+        })
+        self.assertRedirects(response, r_url)
+
+        count_after = len(Participant.objects.filter(tournament=self.tourn))
+        self.assertEqual(count_after, count_before + 1)
+
+        self.ticket.refresh_from_db()
+        self.assertTrue(self.ticket.used)
+
+    def test_use_token_participant_post(self):
+        url = reverse('member:use_token')
+        r_url = reverse('competition:org_table', kwargs={'tour_name': self.tourn.name,
+                                                         'org_name': self.org.name})
+        self.ticket.refresh_from_db()
+        self.assertFalse(self.ticket.used)
+        Participant.objects.create(user=self.user, tournament=self.tourn)
+
+        count_before = len(Participant.objects.filter(tournament=self.tourn))
+
+        response = self.client.post(url, {
+            'token': self.ticket.token,
+        })
+        self.assertRedirects(response, r_url)
+
+        count_after = len(Participant.objects.filter(tournament=self.tourn))
+        self.assertEqual(count_after, count_before)
+
+        self.ticket.refresh_from_db()
+        self.assertTrue(self.ticket.used)
+
     def test_announcement(self):
         url = reverse('member:announcement')
         response = self.client.get(url)
         self.assertRedirects(response, reverse('login') + "?next=" + url)
 
-        user = User.objects.get(username='testuser1')
-        user.is_superuser = True
-        user.save()
+        self.user.is_superuser = True
+        self.user.save()
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'announcement.html')
+
+    def test_announcement_post(self):
+        url = reverse('member:announcement')
+        response = self.client.post(url, {
+            'subject': "Test",
+            'message': "body",
+        })
+        self.assertRedirects(response, reverse('login') + "?next=" + url)
 
     def test_tickets(self):
         comp = Competition.objects.get(organisation__name="Test")
@@ -124,4 +172,34 @@ class MemberViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'tickets.html')
+
+class AnnouncementTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username='testuser1', password='test123', email='testuser1@example.com')
+        cls.user.is_superuser = True
+        cls.user.save()
+
+        cls.url = reverse('member:announcement')
+
+    def setUp(self):
+        login = self.client.login(username='testuser1', password='test123')
+        self.assertTrue(login)
+
+    def test_nnouncement_test_email(self):
+        response = self.client.post(self.url, {
+            'subject': "Test subject",
+            'message': "test email body",
+            'test_email': "true",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'announcement_sent.html')
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+
+        self.assertEqual(email.subject, "Test subject")
+        self.assertEqual(email.to, ['testuser1@example.com'])
+
+        self.assertTrue("test email body" in email.body)
 
