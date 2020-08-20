@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User, Permission
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 
@@ -8,7 +8,7 @@ import pytz
 import unittest
 
 from .models import Sport, Tournament, Participant
-from .models import Benchmark, Team, Match
+from .models import Benchmark, Team, Match, Prediction
 
 class CompetitionViewLoggedOutTest(TestCase):
     @classmethod
@@ -763,3 +763,66 @@ class HomePageContent(TestCase):
         self.assertEqual(len(response.context['matches_tomorrow']), 6)
 
 
+class PredictionsAndMatches(TransactionTestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser1', password='test123')
+        self.user.save()
+        self.other_user = User.objects.create_user(username='testuser2', password='test123')
+        self.other_user.save()
+
+        sport = Sport.objects.create(name='sport')
+        self.tourn = Tournament.objects.create(name='tourn',
+                                            sport=sport,
+                                            state=Tournament.ACTIVE)
+        self.url = reverse('competition:submit', kwargs={'tour_name':self.tourn.name})
+
+        Participant.objects.create(user=self.user, tournament=self.tourn)
+
+        self.team_a = Team.objects.create(name='team A', code='AAA', sport=sport)
+        self.team_b = Team.objects.create(name='team B', code='BBB', sport=sport)
+
+        now = timezone.make_aware(datetime.datetime.now())
+
+        Match.objects.create(pk=1, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now - datetime.timedelta(days=1, minutes=15))
+        Match.objects.create(pk=2, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now)
+        Match.objects.create(pk=3, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now + datetime.timedelta(minutes=15))
+        Match.objects.create(pk=4, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now + datetime.timedelta(days=1, minutes=15))
+
+        login = self.client.login(username='testuser1', password='test123')
+        self.assertTrue(login)
+
+    def test_submit_post(self):
+        response = self.client.post(self.url, {
+            '1': -1,
+            '2': 2,
+            '3': -3,
+            '4': "home",
+            '5': -5,
+        })
+
+        self.assertEqual(len(response.context['fixture_list']), 1)
+        self.assertEqual(response.context['fixture_list'][0].pk, 4)
+
+        predictions = Prediction.objects.filter(match__pk=1, user=self.user)
+        self.assertEqual(len(predictions), 0)
+        predictions = Prediction.objects.filter(match__pk=2, user=self.user)
+        self.assertEqual(len(predictions), 0)
+        predictions = Prediction.objects.filter(match__pk=3, user=self.user)
+        self.assertEqual(len(predictions), 1)
+        self.assertEqual(predictions[0].prediction, -3)
+        predictions = Prediction.objects.filter(match__pk=4, user=self.user)
+        self.assertEqual(len(predictions), 0)
+
+        response = self.client.post(self.url, {
+            '3': 3,
+            '4': 4,
+        })
+
+        self.assertEqual(len(response.context['fixture_list']), 0)
+
+        predictions = Prediction.objects.filter(match__pk=3, user=self.user)
+        self.assertEqual(len(predictions), 1)
+        self.assertEqual(predictions[0].prediction, -3)
+        predictions = Prediction.objects.filter(match__pk=4, user=self.user)
+        self.assertEqual(len(predictions), 1)
+        self.assertEqual(predictions[0].prediction, 4)
