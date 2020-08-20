@@ -180,6 +180,13 @@ class AnnouncementTest(TestCase):
         cls.user.is_superuser = True
         cls.user.save()
 
+        user = User.objects.create_user(username='noemail', password='test123')
+        user.save()
+
+        for i in range(3):
+            user = User.objects.create_user(username='user%d' % i, password='test123', email='user%d@example.com')
+            user.save()
+
         cls.url = reverse('member:announcement')
 
     def setUp(self):
@@ -200,6 +207,22 @@ class AnnouncementTest(TestCase):
 
         self.assertEqual(email.subject, "Test subject")
         self.assertEqual(email.to, ['testuser1@example.com'])
+
+        self.assertTrue("test email body" in email.body)
+
+    def test_nnouncement_email(self):
+        response = self.client.post(self.url, {
+            'subject': "Test subject",
+            'message': "test email body",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'announcement_sent.html')
+        self.assertEqual(response.context['user_list_len'], 4)
+
+        self.assertEqual(len(mail.outbox), 4)
+        email = mail.outbox[0]
+
+        self.assertEqual(email.subject, "Test subject")
 
         self.assertTrue("test email body" in email.body)
 
