@@ -774,33 +774,37 @@ class PredictionsAndMatches(TransactionTestCase):
         self.tourn = Tournament.objects.create(name='tourn',
                                             sport=sport,
                                             state=Tournament.ACTIVE)
-        self.url = reverse('competition:submit', kwargs={'tour_name':self.tourn.name})
 
         Participant.objects.create(user=self.user, tournament=self.tourn)
+        Participant.objects.create(user=self.other_user, tournament=self.tourn)
 
         self.team_a = Team.objects.create(name='team A', code='AAA', sport=sport)
         self.team_b = Team.objects.create(name='team B', code='BBB', sport=sport)
 
         now = timezone.make_aware(datetime.datetime.now())
 
-        Match.objects.create(pk=1, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now - datetime.timedelta(days=1, minutes=15))
-        Match.objects.create(pk=2, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now)
-        Match.objects.create(pk=3, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now + datetime.timedelta(minutes=15))
-        Match.objects.create(pk=4, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now + datetime.timedelta(days=1, minutes=15))
+        self.matches = [
+            Match.objects.create(pk=1, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now - datetime.timedelta(days=1, minutes=15)),
+            Match.objects.create(pk=2, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now),
+            Match.objects.create(pk=3, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now + datetime.timedelta(minutes=15)),
+            Match.objects.create(pk=4, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now + datetime.timedelta(days=1, minutes=15)),
+            Match.objects.create(pk=5, tournament=self.tourn, home_team=self.team_a, away_team=self.team_b, kick_off=now + datetime.timedelta(days=2)),
+        ]
 
         login = self.client.login(username='testuser1', password='test123')
         self.assertTrue(login)
 
     def test_submit_post(self):
-        response = self.client.post(self.url, {
+        url = reverse('competition:submit', kwargs={'tour_name':self.tourn.name})
+        response = self.client.post(url, {
             '1': -1,
             '2': 2,
             '3': -3,
             '4': "home",
-            '5': -5,
+            '6': -5,
         })
 
-        self.assertEqual(len(response.context['fixture_list']), 1)
+        self.assertEqual(len(response.context['fixture_list']), 2)
         self.assertEqual(response.context['fixture_list'][0].pk, 4)
 
         predictions = Prediction.objects.filter(match__pk=1, user=self.user)
@@ -813,16 +817,190 @@ class PredictionsAndMatches(TransactionTestCase):
         predictions = Prediction.objects.filter(match__pk=4, user=self.user)
         self.assertEqual(len(predictions), 0)
 
-        response = self.client.post(self.url, {
+        response = self.client.post(url, {
             '3': 3,
             '4': 4,
         })
 
-        self.assertEqual(len(response.context['fixture_list']), 0)
+        self.assertEqual(len(response.context['fixture_list']), 1)
 
         predictions = Prediction.objects.filter(match__pk=3, user=self.user)
         self.assertEqual(len(predictions), 1)
         self.assertEqual(predictions[0].prediction, -3)
+        self.assertFalse(predictions[0].late)
         predictions = Prediction.objects.filter(match__pk=4, user=self.user)
         self.assertEqual(len(predictions), 1)
         self.assertEqual(predictions[0].prediction, 4)
+
+    def test_predictions_post(self):
+        url = reverse('competition:predictions', kwargs={'tour_name': self.tourn.name})
+
+        p1 = Prediction.objects.create(match=self.matches[0], prediction=1, user=self.user)
+        p2 = Prediction.objects.create(match=self.matches[1], prediction=2, user=self.user)
+        p3 = Prediction.objects.create(match=self.matches[2], prediction=3, user=self.user)
+
+        response = self.client.post(url, {
+            'prediction_id': p1.pk,
+            'prediction_prediction': -1,
+        })
+
+        self.assertEqual(len(response.context['predictions']), 3)
+        self.assertEqual(response.context['predictions'][0].pk, p3.pk)
+        self.assertEqual(response.context['predictions'][0].match.pk, 3)
+        self.assertEqual(response.context['predictions'][0].prediction, 3)
+        self.assertEqual(response.context['predictions'][1].pk, p2.pk)
+        self.assertEqual(response.context['predictions'][1].match.pk, 2)
+        self.assertEqual(response.context['predictions'][1].prediction, 2)
+        self.assertEqual(response.context['predictions'][2].pk, p1.pk)
+        self.assertEqual(response.context['predictions'][2].match.pk, 1)
+        self.assertEqual(response.context['predictions'][2].prediction, 1)
+
+        response = self.client.post(url, {
+            'prediction_id': p3.pk,
+            'prediction_prediction': -1,
+        })
+
+        self.assertEqual(len(response.context['predictions']), 3)
+        self.assertEqual(response.context['predictions'][0].pk, p3.pk)
+        self.assertEqual(response.context['predictions'][0].match.pk, 3)
+        self.assertEqual(response.context['predictions'][0].prediction, -1)
+        self.assertEqual(response.context['predictions'][1].pk, p2.pk)
+        self.assertEqual(response.context['predictions'][1].match.pk, 2)
+        self.assertEqual(response.context['predictions'][1].prediction, 2)
+        self.assertEqual(response.context['predictions'][2].pk, p1.pk)
+        self.assertEqual(response.context['predictions'][2].match.pk, 1)
+        self.assertEqual(response.context['predictions'][2].prediction, 1)
+
+        response = self.client.post(url, {
+            'prediction_id': 20,
+            'prediction_prediction': 5,
+        })
+
+        self.assertEqual(len(response.context['predictions']), 3)
+        self.assertEqual(response.context['predictions'][0].pk, p3.pk)
+        self.assertEqual(response.context['predictions'][0].match.pk, 3)
+        self.assertEqual(response.context['predictions'][0].prediction, -1)
+        self.assertEqual(response.context['predictions'][1].pk, p2.pk)
+        self.assertEqual(response.context['predictions'][1].match.pk, 2)
+        self.assertEqual(response.context['predictions'][1].prediction, 2)
+        self.assertEqual(response.context['predictions'][2].pk, p1.pk)
+        self.assertEqual(response.context['predictions'][2].match.pk, 1)
+        self.assertEqual(response.context['predictions'][2].prediction, 1)
+
+    def test_predictions_other_user(self):
+        url = reverse('competition:predictions', kwargs={'tour_name': self.tourn.name})
+
+        Prediction.objects.create(match=self.matches[0], prediction=1, user=self.user)
+        Prediction.objects.create(match=self.matches[1], prediction=2, user=self.user)
+        Prediction.objects.create(match=self.matches[2], prediction=3, user=self.user)
+
+        response = self.client.get(url + '?user=%s' % self.other_user.username)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(response.context['predictions']), 0)
+
+        Prediction.objects.create(match=self.matches[0], prediction=4, user=self.other_user)
+        Prediction.objects.create(match=self.matches[1], prediction=-1, user=self.other_user)
+        Prediction.objects.create(match=self.matches[2], prediction=-3, user=self.other_user)
+
+        response = self.client.get(url + '?user=%s' % self.other_user.username)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(response.context['predictions']), 2)
+        self.assertEqual(response.context['predictions'][0].match.pk, 2)
+        self.assertEqual(response.context['predictions'][0].prediction, -1)
+        self.assertEqual(response.context['predictions'][1].match.pk, 1)
+        self.assertEqual(response.context['predictions'][1].prediction, 4)
+
+        response = self.client.get(url + '?user=%s' % self.user.username)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(response.context['predictions']), 3)
+        self.assertEqual(response.context['predictions'][0].match.pk, 3)
+        self.assertEqual(response.context['predictions'][0].prediction, 3)
+        self.assertEqual(response.context['predictions'][1].match.pk, 2)
+        self.assertEqual(response.context['predictions'][1].prediction, 2)
+        self.assertEqual(response.context['predictions'][2].match.pk, 1)
+        self.assertEqual(response.context['predictions'][2].prediction, 1)
+
+        response = self.client.get(url + '?user=bla')
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(response.context['predictions']), 3)
+        self.assertEqual(response.context['predictions'][0].match.pk, 3)
+        self.assertEqual(response.context['predictions'][0].prediction, 3)
+        self.assertEqual(response.context['predictions'][1].match.pk, 2)
+        self.assertEqual(response.context['predictions'][1].prediction, 2)
+        self.assertEqual(response.context['predictions'][2].match.pk, 1)
+        self.assertEqual(response.context['predictions'][2].prediction, 1)
+
+        response = self.client.get(url + '?bla=bla')
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(response.context['predictions']), 3)
+        self.assertEqual(response.context['predictions'][0].match.pk, 3)
+        self.assertEqual(response.context['predictions'][0].prediction, 3)
+        self.assertEqual(response.context['predictions'][1].match.pk, 2)
+        self.assertEqual(response.context['predictions'][1].prediction, 2)
+        self.assertEqual(response.context['predictions'][2].match.pk, 1)
+        self.assertEqual(response.context['predictions'][2].prediction, 1)
+
+    def test_results_post(self):
+        url = reverse('competition:results', kwargs={'tour_name': self.tourn.name})
+
+        p1 = Prediction.objects.create(match=self.matches[0], prediction=1, user=self.user)
+        p2 = Prediction.objects.create(match=self.matches[1], prediction=-1, user=self.user)
+        p3 = Prediction.objects.create(match=self.matches[2], prediction=3, user=self.user)
+        p4 = Prediction.objects.create(match=self.matches[1], prediction=5, user=self.other_user)
+
+        response = self.client.post(url, {
+            '1': 2,
+            '2': 5,
+            '3': -1,
+        })
+        self.assertRedirects(response, reverse('login') + "?next=" + url)
+
+        permission = Permission.objects.get(name='Can change match')
+        self.user.user_permissions.add(permission)
+
+        response = self.client.post(url, {
+            '1': 2,
+            '2': 5,
+            '3': -1,
+        })
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(Match.objects.get(pk=1).score, 2)
+        self.assertEqual(Match.objects.get(pk=2).score, 5)
+        self.assertEqual(Match.objects.get(pk=3).score, None)
+
+        for p in [p1, p2, p3, p4]:
+            p.refresh_from_db()
+
+        self.assertEqual(p1.score, -1)
+        self.assertEqual(p1.margin, 1)
+        self.assertEqual(p2.score, 6)
+        self.assertEqual(p2.margin, 6)
+        self.assertEqual(p3.score, None)
+        self.assertEqual(p3.margin, None)
+        self.assertEqual(p4.score, -2)
+        self.assertEqual(p4.margin, 0)
+
+        p5 = Prediction.objects.get(match_id=1, user=self.other_user)
+        self.assertTrue(p5.late)
+        self.assertEqual(p5.prediction, 0)
+        self.assertEqual(p5.score, 2)
+        self.assertEqual(p5.margin, 2)
+
+        response = self.client.post(url, {
+            '1': 3,
+            '2': 3,
+            '3': 3,
+        })
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(Match.objects.get(pk=1).score, 2)
+        self.assertEqual(Match.objects.get(pk=2).score, 5)
+        self.assertEqual(Match.objects.get(pk=3).score, None)
+
+
