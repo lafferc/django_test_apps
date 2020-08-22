@@ -778,6 +778,8 @@ class PredictionsAndMatches(TransactionTestCase):
         Participant.objects.create(user=self.user, tournament=self.tourn)
         Participant.objects.create(user=self.other_user, tournament=self.tourn)
 
+        Benchmark.objects.create(tournament=self.tourn, name="rand", prediction_algorithm=Benchmark.RANDOM, range_start=-5, range_end=5)
+
         self.team_a = Team.objects.create(name='team A', code='AAA', sport=sport)
         self.team_b = Team.objects.create(name='team B', code='BBB', sport=sport)
 
@@ -1002,5 +1004,38 @@ class PredictionsAndMatches(TransactionTestCase):
         self.assertEqual(Match.objects.get(pk=1).score, 2)
         self.assertEqual(Match.objects.get(pk=2).score, 5)
         self.assertEqual(Match.objects.get(pk=3).score, None)
+
+
+    def test_match(self):
+        url = reverse('competition:match', kwargs={'match_pk': 1})
+
+        Prediction.objects.create(match=self.matches[0], prediction=1, user=self.user)
+        Prediction.objects.create(match=self.matches[1], prediction=2, user=self.user)
+        Prediction.objects.create(match=self.matches[0], prediction=-1, user=self.other_user)
+        Prediction.objects.create(match=self.matches[1], prediction=-1, user=self.other_user)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['predictions']), 2)
+
+        self.matches[0].score = 3
+        self.matches[0].save()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['predictions']), 2)
+
+        self.tourn.test_features_enabled = True
+        self.tourn.save()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['predictions']), 2)
+
+        response = self.client.get(url + "?benchmarks=show")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['predictions']), 3)
+
+
 
 
