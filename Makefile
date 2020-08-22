@@ -20,5 +20,6 @@ update:
 	service httpd stop
 	pip install -r requirements.txt
 	rsync -rv --exclude=".*" . $(target_dir)
+	$(target_dir)/manage.py collectstatic --noinput
 	cd $(target_dir); ./manage.py migrate; chown apache:apache *
 	service httpd start
