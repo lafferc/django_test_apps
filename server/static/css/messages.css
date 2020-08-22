@@ -1,0 +1,86 @@
+/* MESSAGES & ERRORS */
+
+ul.messagelist {
+    padding: 0;
+    margin: 0;
+}
+
+ul.messagelist li {
+    font-size: 12px;
+    font-weight: bold;
+    display: block;
+    padding: 5px 5px 4px 25px;
+    margin: 0 0 3px 0;
+    border-bottom: 1px solid #ddd;
+    color: #666;
+    background: #dfd url(../admin/img/icon_success.gif) 5px .3em no-repeat;
+}
+
+ul.messagelist li.warning {
+    background: #ffc url(../admin/img/icon_alert.gif) 5px .3em no-repeat;
+}
+
+ul.messagelist li.error {
+    background: #ffefef url(../admin/img/icon_error.gif) 5px .3em no-repeat;
+}
+
+.errornote {
+    font-size: 12px !important;
+    font-weight: bold;
+    display: block;
+    padding: 5px 5px 4px 25px;
+    margin: 0 0 3px 0;
+    border: 1px solid #c22;
+    color: #c11;
+    background: #ffefef url(../img/icon_error.gif) 5px .38em no-repeat;
+}
+
+.errornote, ul.errorlist {
+    border-radius: 1px;
+}
+
+ul.errorlist {
+    margin: 0 0 4px !important;
+    padding: 0 !important;
+    color: #fff;
+    background: #c11;
+}
+
+ul.errorlist li {
+    font-size: 12px !important;
+    display: block;
+    padding: 5px 5px 4px 7px;
+    margin: 3px 0 0 0;
+}
+
+ul.errorlist li:first-child {
+    margin-top: 0;
+}
+
+ul.errorlist li a {
+    color: #fff;
+    text-decoration: underline;
+}
+
+td ul.errorlist {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+td ul.errorlist li {
+    margin: 0 !important;
+}
+
+.errors, .form-row.errors {
+    background: #ffefef;
+}
+
+.form-row.errors {
+    border: 1px solid #c22;
+    margin: -1px;
+}
+
+.errors input, .errors select, .errors textarea {
+    border: 1px solid #c11;
+}
+

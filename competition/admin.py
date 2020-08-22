@@ -11,6 +11,7 @@ class TeamAdmin(admin.ModelAdmin):
     list_filter = (
         ('sport', admin.RelatedOnlyFieldListFilter),
     )
+
     def get_readonly_fields(self, request, obj):
         if obj:
             return ('sport',)
@@ -66,7 +67,7 @@ def archive_tournament(modeladmin, request, queryset):
 
 class TournamentAdmin(admin.ModelAdmin):
     list_display = ('name', 'participant_count', 'match_count')
-    inlines = ( BenchmarkInline, ParticipantInline, )
+    inlines = (BenchmarkInline, ParticipantInline,)
     actions = [pop_leaderboard, close_tournament,
                open_tournament, archive_tournament]
     list_filter = (
@@ -88,16 +89,17 @@ class TournamentAdmin(admin.ModelAdmin):
         return ('winner')
 
     def get_fieldsets(self, request, obj):
-        if request.user.has_perm('Tournament.csv_upload') and (not obj or obj.state not in [Tournament.FINISHED, Tournament.ARCHIVED]):
-            return self.fieldsets
+        if request.user.has_perm('Tournament.csv_upload'):
+            if not obj or obj.state not in [Tournament.FINISHED, Tournament.ARCHIVED]:
+                return self.fieldsets
         return ((None, {'fields': ('name', 'sport', 'state', 'bonus', 'draw_bonus',
                                    'late_get_bonus', 'year', 'winner')}),)
 
     def participant_count(self, obj):
-        return obj.participant_set.count();
+        return obj.participant_set.count()
 
     def match_count(self, obj):
-        return obj.match_set.count();
+        return obj.match_set.count()
 
     def get_inline_instances(self, request, obj=None):
         return obj and super(TournamentAdmin, self).get_inline_instances(request, obj) or []
@@ -108,6 +110,7 @@ def calc_match_result(modeladmin, request, queryset):
         if match.score is None:
             continue
         match.tournament.check_predictions(match)
+
 
 def postpone(modeladmin, request, queryset):
     queryset.update(postponed=True)
@@ -126,6 +129,7 @@ class MatchAdmin(admin.ModelAdmin):
                        'away_team', 'away_team_winner_of', 'kick_off', 'postponed', 'score')
         }),
     )
+
     def get_readonly_fields(self, request, obj):
         if obj:
             return ('tournament', 'match_id', 'home_team', 'away_team')
@@ -137,23 +141,26 @@ class MatchAdmin(admin.ModelAdmin):
         if not obj.home_team and not obj.away_team:
             return self.fieldsets
         if not obj.home_team:
-            return ( (None, { 'fields': ('tournament', 'match_id', 'home_team',
-                                         'home_team_winner_of', 'away_team',
-                                         'kick_off', 'postponed', 'score')
+            return ((None, {'fields': ('tournament', 'match_id', 'home_team',
+                                       'home_team_winner_of', 'away_team',
+                                       'kick_off', 'postponed', 'score')
                             }),)
         if not obj.away_team:
-            return ( (None, { 'fields': ('tournament', 'match_id', 'home_team',
-                                         'away_team', 'away_team_winner_of',
-                                         'kick_off', 'postponed', 'score') }),)
-        return ( (None, { 'fields': ('tournament', 'match_id', 'home_team',
-                                     'away_team', 'kick_off', 'postponed',
-                                     'score') }),)
+            return ((None, {'fields': ('tournament', 'match_id', 'home_team',
+                                       'away_team', 'away_team_winner_of',
+                                       'kick_off', 'postponed', 'score')}),)
+        return ((None, {'fields': ('tournament', 'match_id', 'home_team',
+                                   'away_team', 'kick_off', 'postponed',
+                                   'score')}),)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "tournament":
-            kwargs["queryset"] = Tournament.objects.filter(state__in = [Tournament.PENDING, Tournament.ACTIVE])
+            kwargs["queryset"] = Tournament.objects.filter(state__in=[Tournament.PENDING,
+                                                                      Tournament.ACTIVE])
         if db_field.name in ["home_team_winner_of", "away_team_winner_of"]:
-            kwargs["queryset"] = Match.objects.filter(tournament__state__in = [Tournament.PENDING, Tournament.ACTIVE]).filter(score=None)
+            kwargs["queryset"] = Match.objects.filter(
+                tournament__state__in=[Tournament.PENDING, Tournament.ACTIVE]
+            ).filter(score=None)
         return super(MatchAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -167,8 +174,8 @@ class PredictionAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj):
         if obj:
-            return ('user', 'match', 'prediction', 'margin','score', "late")
-        return ('margin','score', "late")
+            return ('user', 'match', 'prediction', 'margin', 'score', "late")
+        return ('margin', 'score', "late")
 
 
 class BenchmarkAdmin(admin.ModelAdmin):
@@ -189,7 +196,8 @@ class BenchmarkAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "tournament":
-            kwargs["queryset"] = Tournament.objects.filter(state__in = [Tournament.PENDING, Tournament.ACTIVE])
+            kwargs["queryset"] = Tournament.objects.filter(state__in=[Tournament.PENDING,
+                                                                      Tournament.ACTIVE])
         return super(BenchmarkAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_fieldsets(self, request, obj):

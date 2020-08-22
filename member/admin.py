@@ -27,11 +27,12 @@ class ParticipantInline(admin.TabularInline):
 
         if db_field.name == 'participant':
             if request._obj_ is not None:
-                field.queryset = field.queryset.filter(tournament = request._obj_.tournament)  
+                field.queryset = field.queryset.filter(tournament=request._obj_.tournament)
             else:
                 field.queryset = field.queryset.none()
 
         return field
+
 
 def add_tickets(modeladmin, request, queryset):
     g_logger.debug("add_tickets(%r, %r, %r)", modeladmin, request, queryset)
@@ -41,13 +42,13 @@ def add_tickets(modeladmin, request, queryset):
 
 
 class CompetitionAdmin(admin.ModelAdmin):
-    inlines = ( TicketInline, ParticipantInline)
-    actions = [ add_tickets ]
+    inlines = (TicketInline, ParticipantInline)
+    actions = [add_tickets]
     list_display = ('organisation', 'tournament', 'participant_count')
     fields = ('organisation', 'tournament', 'token_len')
 
     def participant_count(self, obj):
-        return obj.participants.count();
+        return obj.participants.count()
 
     def get_readonly_fields(self, request, obj):
         return obj and ('organisation', 'tournament') or []
@@ -63,6 +64,7 @@ class CompetitionAdmin(admin.ModelAdmin):
 
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'test_features_enabled')
+
 
 admin.site.register(Profile)
 admin.site.register(Organisation)

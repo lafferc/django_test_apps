@@ -1,23 +1,19 @@
-from django.db import models, IntegrityError, transaction
+from django.db import models, IntegrityError
 from django.db.models import Avg, Max
-from django.db.models.signals import post_save, pre_save
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
-from django.dispatch import receiver
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string, get_template
-from django.conf import settings
+from django.template.loader import render_to_string
 import logging
 import csv
-import os
 import datetime
 import random
 from decimal import Decimal
 
 g_logger = logging.getLogger(__name__)
+
 
 def current_year():
     return datetime.datetime.today().year
@@ -115,7 +111,6 @@ class Tournament(models.Model):
 
         self.update_table()
 
-
     def find_team(self, name):
         try:
             return Team.objects.get(sport=self.sport, name=name)
@@ -184,14 +179,14 @@ class Tournament(models.Model):
                 if row['home_team'] == "TBD":
                     row['home_team'] = None
                     row['home_team_winner_of'] = self.match_set.get(
-                            match_id=row['home_team_winner_of'])
+                        match_id=row['home_team_winner_of'])
                 else:
                     row['home_team'] = self.find_team(row['home_team'])
                     row['home_team_winner_of'] = None
                 if row['away_team'] == "TBD":
                     row['away_team'] = None
                     row['away_team_winner_of'] = self.match_set.get(
-                            match_id=row['away_team_winner_of'])
+                        match_id=row['away_team_winner_of'])
                 else:
                     row['away_team'] = self.find_team(row['away_team'])
                     row['away_team_winner_of'] = None
@@ -199,7 +194,6 @@ class Tournament(models.Model):
                 Match(**row).save()
             except (IntegrityError, ValidationError, Team.DoesNotExist, Match.DoesNotExist):
                 g_logger.exception("Failed to add match")
-
 
     class Meta:
         permissions = (
@@ -293,11 +287,11 @@ class Participant(Predictor):
         except Prediction.DoesNotExist:
             print("%s did not predict %s" % (self.user, match))
             return self.predict(match)
-    
+
     def get_url(self):
         return "%s?user=%s" % (
-                reverse('competition:predictions', args=(self.tournament.name,)),
-                self.user.username)
+            reverse('competition:predictions', args=(self.tournament.name,)),
+            self.user.username)
 
     class Meta:
         unique_together = ('tournament', 'user',)
@@ -308,9 +302,11 @@ class Match(models.Model):
     match_id = models.IntegerField(blank=True)
     kick_off = models.DateTimeField(verbose_name='Start Time')
     home_team = models.ForeignKey(Team, related_name='match_home_team', null=True, blank=True)
-    home_team_winner_of = models.ForeignKey('self', blank=True, null=True, related_name='match_next_home')
+    home_team_winner_of = models.ForeignKey('self', blank=True, null=True,
+                                            related_name='match_next_home')
     away_team = models.ForeignKey(Team, related_name='match_away_team', null=True, blank=True)
-    away_team_winner_of = models.ForeignKey('self', blank=True, null=True, related_name='match_next_away')
+    away_team_winner_of = models.ForeignKey('self', blank=True, null=True,
+                                            related_name='match_next_away')
     score = models.IntegerField(blank=True, null=True)
     postponed = models.BooleanField(blank=True, default=False)
 
@@ -342,7 +338,7 @@ class Match(models.Model):
 
     def check_next_round_matches(self):
         if not self.score:
-            return #no winner
+            return  # no winner
         if self.score > 0:
             winner = self.home_team
         else:
@@ -406,9 +402,12 @@ class PredictionBase(models.Model):
             self.score = self.margin
 
     def bonus(self, result):
-        if result == 0: # draw 
+        if result == 0:  # draw
             return self.match.tournament.bonus * self.match.tournament.draw_bonus
         return self.match.tournament.bonus
+
+    def get_predictor(self):
+        raise NotImplementedError("%s didn't override get_predictor" % self.__class__)
 
     class Meta:
         abstract = True
@@ -426,6 +425,9 @@ class Prediction(PredictionBase):
         if self.late and not self.match.tournament.late_get_bonus:
             return 0
         return super(Prediction, self).bonus(result)
+
+    def get_predictor(self):
+        return self.match.tournament.participant_set.get(user=self.user)
 
     class Meta:
         unique_together = ('user', 'match',)
@@ -451,32 +453,41 @@ class Benchmark(Predictor):
         elif self.prediction_algorithm == self.MEAN:
             return "%s MEAN %s" % (self.tournament, self.name)
         elif self.prediction_algorithm == self.RANDOM:
-            return "%s RANDOM(%d, %d) %s" % (self.tournament, self.range_start, self.range_end, self.name)
+            return "%s RANDOM(%d, %d) %s" % (self.tournament, self.range_start,
+                                             self.range_end, self.name)
         return "%s OTHER %s" % (self.tournament, self.name)
-
 
     def clean(self):
         super(Benchmark, self).clean()
 
         if self.prediction_algorithm == self.STATIC:
-            if self.static_value is None:
-                raise ValidationError('Static value is required for this prediction algorithm')
-            if self.range_start is not None or self.range_end is not None:
-                raise ValidationError('Range is not used with this prediction algorithm')
+            self.clean_static()
         elif self.prediction_algorithm == self.MEAN:
-            if self.static_value is not None:
-                raise ValidationError('Static value is not used with this prediction algorithm')
-            if self.range_start is not None or self.range_end is not None:
-                raise ValidationError('Range is not used with this prediction algorithm')
+            self.clean_mean()
         elif self.prediction_algorithm == self.RANDOM:
-            if self.static_value is not None:
-                raise ValidationError('Static value is not used with this prediction algorithm')
-            if self.range_start is None:
-                raise ValidationError('Range start is required for this prediction algorithm')
-            if self.range_end is None:
-                raise ValidationError('Range end is required for this prediction algorithm')
-            if self.range_start > self.range_end:
-                raise ValidationError('Range start must be less than range end')
+            self.clean_random()
+
+    def clean_static(self):
+        if self.static_value is None:
+            raise ValidationError('Static value is required for this prediction algorithm')
+        if self.range_start is not None or self.range_end is not None:
+            raise ValidationError('Range is not used with this prediction algorithm')
+
+    def clean_mean(self):
+        if self.static_value is not None:
+            raise ValidationError('Static value is not used with this prediction algorithm')
+        if self.range_start is not None or self.range_end is not None:
+            raise ValidationError('Range is not used with this prediction algorithm')
+
+    def clean_random(self):
+        if self.static_value is not None:
+            raise ValidationError('Static value is not used with this prediction algorithm')
+        if self.range_start is None:
+            raise ValidationError('Range start is required for this prediction algorithm')
+        if self.range_end is None:
+            raise ValidationError('Range end is required for this prediction algorithm')
+        if self.range_start > self.range_end:
+            raise ValidationError('Range start must be less than range end')
 
     def get_name(self):
         return self.name
@@ -496,7 +507,7 @@ class Benchmark(Predictor):
                 prediction.prediction = 0
         elif self.prediction_algorithm == self.RANDOM:
             prediction.prediction = random.randint(self.range_start, self.range_end)
-        
+
         return prediction
 
     def get_predictions(self):
@@ -509,12 +520,18 @@ class Benchmark(Predictor):
             print("%s did not predict %s" % (self, match))
             return self.predict(match)
 
+    def get_url(self):
+        return reverse('competition:benchmark', args=(self.pk,))
+
 
 class BenchmarkPrediction(PredictionBase):
     benchmark = models.ForeignKey(Benchmark)
 
     def __str__(self):
         return "%s: %s" % (self.benchmark, self.match)
+
+    def get_predictor(self):
+        return self.benchmark
 
     class Meta:
         unique_together = ('benchmark', 'match',)
