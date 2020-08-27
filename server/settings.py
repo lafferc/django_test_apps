@@ -146,6 +146,7 @@ if DEBUG:
     EMAIL_PORT = 25
     EMAIL_HOST_USER = ''
     EMAIL_HOST_PASSWORD = ''
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else: # !DEBUG
     EMAIL_USE_TLS = True
     EMAIL_HOST = 'smtp.gmail.com'
@@ -174,8 +175,11 @@ SITE_ID = 1
 # Provider specific settings SOCIALACCOUNT_PROVIDERS = { 'google': { # For each OAuth based provider, either add a ``SocialApp`` # (``socialaccount`` app) containing the required client # credentials, or list them here: 'APP': { 'client_id': '123', 'secret': '456', 'key': '' } } }
 
 # AllAuth settings
-ACCOUNT_EMAIL_REQUIRED=True
-ACCOUNT_EMAIL_VERIFICATION="mandatory"
-ACCOUNT_SESSION_REMEMBER=True
-ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE=True
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = True
+ACCOUNT_LOGOUT_ON_GET = True
 # ACCOUNT_SIGNUP_FORM_CLASS=
+# ACCOUNT_USER_DISPLAY = user.profile.get_name
+ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = False

@@ -53,7 +53,7 @@ class ServerViewTest (TestCase):
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/accounts/logout/')
-        self.assertEqual(response.status_code, 200)
+        self.assertRedirects(response, '/', target_status_code=302)
 
         response = self.client.get('/')
         self.assertRedirects(response, '/accounts/login/?next=/')
@@ -70,6 +70,8 @@ class SignupTest(TestCase):
 
     def test_signup(self):
         url = reverse('signup')
+        url_index = reverse('index')
+
         response = self.client.post(url, {
             'username': 'new_user',
             'password1': 'password',
@@ -98,9 +100,12 @@ class SignupTest(TestCase):
         self.assertEqual(email.to, ['new_user@example.com'])
 
         login = self.client.login(username='new_user', password='password')
-        self.assertFalse(login)
+        self.assertTrue(login)
 
-        m = re.search('https?://testserver(/.*/)', email.body)
+        response = self.client.get(url_index)
+        self.assertRedirects(response, '/accounts/login/?next=/')
+
+        m = re.search('https?://example.com(/.*/)', email.body)
         self.assertIsNotNone(m)
 
         response = self.client.get(m.group(1))
@@ -111,6 +116,10 @@ class SignupTest(TestCase):
 
         login = self.client.login(username='new_user', password='password')
         self.assertTrue(login)
+
+        response = self.client.get(url_index)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'home.html')
 
     def test_signup_duplicate_username(self):
 
