@@ -100,7 +100,7 @@ class SignupTest(TestCase):
         self.assertEqual(email.to, ['new_user@example.com'])
 
         login = self.client.login(username='new_user', password='password')
-        self.assertTrue(login)
+        self.assertFalse(login)
 
         response = self.client.get(url_index)
         self.assertRedirects(response, '/accounts/login/?next=/')
