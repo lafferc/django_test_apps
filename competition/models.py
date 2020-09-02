@@ -285,7 +285,7 @@ class Participant(Predictor):
         try:
             return Prediction.objects.get(user=self.user, match=match)
         except Prediction.DoesNotExist:
-            print("%s did not predict %s" % (self.user, match))
+            g_logger.debug("%s did not predict %s" % (self.user, match))
             return self.predict(match)
 
     def get_url(self):
@@ -517,7 +517,7 @@ class Benchmark(Predictor):
         try:
             return BenchmarkPrediction.objects.get(benchmark=self, match=match)
         except BenchmarkPrediction.DoesNotExist:
-            print("%s did not predict %s" % (self, match))
+            g_logger.debug("%s did not predict %s" % (self, match))
             return self.predict(match)
 
     def get_url(self):

@@ -12,10 +12,13 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
+import logging
 import decimal
 from itertools import chain
 from .models import Tournament, Match, Prediction, Participant, Benchmark
 from member.models import Competition
+
+g_logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -120,7 +123,7 @@ def predictions(request, tour_name):
                                                         ).order_by('-match__kick_off')
                 other_user = other_user.profile.get_name()
         except User.DoesNotExist:
-            print("User(%s) tried to look at %s's predictions but '%s' does not exist"
+            g_logger.debug("User(%s) tried to look at %s's predictions but '%s' does not exist"
                   % (request.user, request.GET['user'], request.GET['user']))
         except KeyError:
             other_user = None
