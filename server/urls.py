@@ -17,11 +17,13 @@ from django.conf.urls import include, url
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.views.generic import TemplateView
+from django.views.generic.base import RedirectView
 from . import views
 
 urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^competition/', include('competition.urls', namespace="competition")),
+    url(r'^admin/login/$', RedirectView.as_view(url=settings.LOGIN_URL, permanent=True, query_string=True)),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^register/$', views.signup, name='signup'),
     url(r'^register/activation_sent/$',
