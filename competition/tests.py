@@ -13,57 +13,57 @@ from .models import Benchmark, Team, Match, Prediction
 class CompetitionViewLoggedOutTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        pass
+        cls.url_login_next = reverse('login') + "?next="
 
     def test_index(self):
         url = reverse('competition:index')
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_predictions(self):
         url = reverse('competition:predictions', kwargs={'tour_name':'tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_table(self):
         url = reverse('competition:table', kwargs={'tour_name':'tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_org_table(self):
         url = reverse('competition:org_table', kwargs={'tour_name':'tourn', 'org_name': 'org'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_join(self):
         url = reverse('competition:join', kwargs={'tour_name':'tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_results(self):
         url = reverse('competition:results', kwargs={'tour_name':'tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_rules(self):
         url = reverse('competition:rules', kwargs={'tour_name':'tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_match(self):
         url = reverse('competition:match', kwargs={'match_pk':1})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_benchmark_table(self):
         url = reverse('competition:benchmark_table', kwargs={'tour_name':'tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_benchmark(self):
         url = reverse('competition:benchmark', kwargs={'benchmark_pk': 1})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
 
 class CompetitionViewNotParticipantTest(TestCase):
@@ -79,6 +79,8 @@ class CompetitionViewNotParticipantTest(TestCase):
         for state, name in Tournament._meta.get_field('state').choices:
             # print("creating %s_tourn" % name.lower())
             Tournament.objects.create(name='%s_tourn' % name.lower(), sport=sport, state=state)
+
+        cls.url_login_next = reverse('login') + "?next="
 
     def setUp(self):
         #print("setUp: Run once for every test method to setup clean data.")
@@ -232,7 +234,7 @@ class CompetitionViewNotParticipantTest(TestCase):
     def test_results_pending(self):
         url = reverse('competition:results', kwargs={'tour_name':'pending_tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
@@ -245,7 +247,7 @@ class CompetitionViewNotParticipantTest(TestCase):
     def test_results_active(self):
         url = reverse('competition:results', kwargs={'tour_name':'active_tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
@@ -258,7 +260,7 @@ class CompetitionViewNotParticipantTest(TestCase):
     def test_results_finished(self):
         url = reverse('competition:results', kwargs={'tour_name':'finished_tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
@@ -271,7 +273,7 @@ class CompetitionViewNotParticipantTest(TestCase):
     def test_results_archived(self):
         url = reverse('competition:results', kwargs={'tour_name':'archived_tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
@@ -366,7 +368,7 @@ class CompetitionViewTest(TestCase):
                                      prediction_algorithm=Benchmark.STATIC,
                                      static_value=0)
 
-
+        cls.url_login_next = reverse('login') + "?next="
 
     def setUp(self):
         login = self.client.login(username='testuser1', password='test123')
@@ -466,7 +468,6 @@ class CompetitionViewTest(TestCase):
         r_url = reverse('competition:submit', kwargs={'tour_name':'pending_tourn'})
         self.assertRedirects(response, r_url)
 
-
     @unittest.skip("transaction error")
     def test_join_active(self):
         url = reverse('competition:join', kwargs={'tour_name':'active_tourn'})
@@ -513,7 +514,7 @@ class CompetitionViewTest(TestCase):
     def test_results_pending(self):
         url = reverse('competition:results', kwargs={'tour_name':'pending_tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
@@ -526,7 +527,7 @@ class CompetitionViewTest(TestCase):
     def test_results_active(self):
         url = reverse('competition:results', kwargs={'tour_name':'active_tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
@@ -539,7 +540,7 @@ class CompetitionViewTest(TestCase):
     def test_results_finished(self):
         url = reverse('competition:results', kwargs={'tour_name':'finished_tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
@@ -552,7 +553,7 @@ class CompetitionViewTest(TestCase):
     def test_results_archived(self):
         url = reverse('competition:results', kwargs={'tour_name':'archived_tourn'})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
@@ -1035,7 +1036,3 @@ class PredictionsAndMatches(TransactionTestCase):
         response = self.client.get(url + "?benchmarks=show")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['predictions']), 3)
-
-
-
-

@@ -11,25 +11,29 @@ from competition.models import Tournament, Sport, Participant
 
 
 class MemberViewLoggedOutTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.url_login_next = reverse('login') + "?next="
+
     def test_profile(self):
         url = reverse('member:profile')
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_use_token(self):
         url = reverse('member:use_token')
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_announcement(self):
         url = reverse('member:announcement')
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_tickets(self):
         url = reverse('member:tickets', kwargs={'comp_pk': 1})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
 
 class MemberViewTest(TestCase):
@@ -37,6 +41,7 @@ class MemberViewTest(TestCase):
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username='testuser1', password='test123')
         cls.user.save()
+        cls.url_login_next = reverse('login') + "?next="
 
         sport = Sport.objects.create(name='sport')
         cls.tourn = Tournament.objects.create(name='active_tourn', sport=sport, state=Tournament.ACTIVE)
@@ -142,7 +147,7 @@ class MemberViewTest(TestCase):
     def test_announcement(self):
         url = reverse('member:announcement')
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         self.user.is_superuser = True
         self.user.save()
@@ -157,13 +162,13 @@ class MemberViewTest(TestCase):
             'subject': "Test",
             'message': "body",
         })
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
     def test_tickets(self):
         comp = Competition.objects.get(organisation__name="Test")
         url = reverse('member:tickets', kwargs={'comp_pk': comp.pk})
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, self.url_login_next + url)
 
         permission = Permission.objects.get(name='Can change match')
         user = User.objects.get(username='testuser1')
