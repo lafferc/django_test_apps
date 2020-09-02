@@ -37,8 +37,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.sessions',
     'django.contrib.staticfiles',
     'competition',
     'member',
@@ -139,6 +139,7 @@ if DEBUG:
     EMAIL_PORT = 25
     EMAIL_HOST_USER = ''
     EMAIL_HOST_PASSWORD = ''
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else: # !DEBUG
     EMAIL_USE_TLS = True
     EMAIL_HOST = 'smtp.gmail.com'
