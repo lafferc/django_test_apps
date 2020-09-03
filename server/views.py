@@ -15,7 +15,6 @@ from itertools import chain
 from competition.models import Tournament, Match
 from member.forms import ProfileAddForm
 from .forms import SignUpForm
-from .tokens import account_activation_token
 
 
 @login_required
@@ -100,23 +99,6 @@ def signup(request):
     }
 
     return render(request, 'registration/register.html', context)
-
-
-def activate(request, uidb64, token):
-    try:
-        uid = force_text(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        user = None
-
-    if user is not None and account_activation_token.check_token(user, token):
-        user.is_active = True
-        user.save()
-        user.backend = 'django.contrib.auth.backends.ModelBackend'
-        login(request, user)
-        return redirect('index')
-    else:
-        return render(request, 'registration/activation_invalid.html')
 
 
 def about(request):

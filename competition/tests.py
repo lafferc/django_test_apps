@@ -13,7 +13,7 @@ from .models import Benchmark, Team, Match, Prediction
 class CompetitionViewLoggedOutTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.url_login_next = reverse('login') + "?next="
+        cls.url_login_next = reverse('account_login') + "?next="
 
     def test_index(self):
         url = reverse('competition:index')
@@ -80,7 +80,7 @@ class CompetitionViewNotParticipantTest(TestCase):
             # print("creating %s_tourn" % name.lower())
             Tournament.objects.create(name='%s_tourn' % name.lower(), sport=sport, state=state)
 
-        cls.url_login_next = reverse('login') + "?next="
+        cls.url_login_next = reverse('account_login') + "?next="
 
     def setUp(self):
         #print("setUp: Run once for every test method to setup clean data.")
@@ -368,7 +368,7 @@ class CompetitionViewTest(TestCase):
                                      prediction_algorithm=Benchmark.STATIC,
                                      static_value=0)
 
-        cls.url_login_next = reverse('login') + "?next="
+        cls.url_login_next = reverse('account_login') + "?next="
 
     def setUp(self):
         login = self.client.login(username='testuser1', password='test123')
@@ -961,7 +961,7 @@ class PredictionsAndMatches(TransactionTestCase):
             '2': 5,
             '3': -1,
         })
-        self.assertRedirects(response, reverse('login') + "?next=" + url)
+        self.assertRedirects(response, reverse('account_login') + "?next=" + url)
 
         permission = Permission.objects.get(name='Can change match')
         self.user.user_permissions.add(permission)
