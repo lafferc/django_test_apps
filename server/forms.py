@@ -17,6 +17,6 @@ class SignUpForm(SignupForm):
 
         user.profile.display_name_format = self.cleaned_data['display_name_format']
         user.profile.cookie_consent = self.cleaned_data['cookie_consent']
-	user.profile.save()
+        user.profile.save()
 
         return user
