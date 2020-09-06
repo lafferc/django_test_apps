@@ -13,8 +13,6 @@ import datetime
 from itertools import chain
 
 from competition.models import Tournament, Match
-from member.forms import ProfileAddForm
-from .forms import SignUpForm
 
 
 @login_required
@@ -59,46 +57,6 @@ def index(request):
         'matches_tomorrow': matches_tomorrow,
     }
     return HttpResponse(template.render(context, request))
-
-
-def signup(request):
-    current_site = get_current_site(request)
-
-    if request.method == 'POST':
-        form = SignUpForm(request.POST)
-        profile_form = ProfileAddForm(request.POST)
-        if form.is_valid() and profile_form.is_valid():
-            user = form.save(commit=False)
-            user.is_active = False
-            user.save()
-            user.profile.cookie_consent = profile_form.cleaned_data['cookie_consent']
-            user.profile.display_name_format = profile_form.cleaned_data['display_name_format']
-            user.profile.save()
-
-            subject = 'Activate Your Account'
-            message = render_to_string('registration/activation_email.html', {
-                'user': user,
-                'domain': current_site.domain,
-                'site_name': current_site.name,
-                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                'token': account_activation_token.make_token(user),
-                'protocol': 'https' if request.is_secure() else 'http',
-            })
-            user.email_user(subject, message)
-            return redirect('activation_sent')
-        else:
-            messages.error(request, _('Please correct the error below.'))
-    else:
-        form = SignUpForm()
-        profile_form = ProfileAddForm()
-
-    context = {
-        'site_name': current_site.name,
-        'form': form,
-        'profile_form': profile_form,
-    }
-
-    return render(request, 'registration/register.html', context)
 
 
 def about(request):

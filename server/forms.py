@@ -1,24 +1,22 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from captcha.fields import ReCaptchaField
+from allauth.account.forms import SignupForm
+from member.models import Profile
 
 
-class SignUpForm(UserCreationForm):
+class SignUpForm(SignupForm):
     first_name = forms.CharField(max_length=30, required=False, help_text='Optional.')
     last_name = forms.CharField(max_length=30, required=False, help_text='Optional.')
-    email = forms.EmailField(max_length=254,
-                             help_text='Required. Input an email address for account verification.')
     captcha = ReCaptchaField()
 
-    class Meta:
-        model = User
-        fields = ('username', 'password1', 'password2', 'first_name', 'last_name', 'email', )
+    display_name_format = forms.ChoiceField(choices=Profile._meta.get_field('display_name_format').choices)
+    cookie_consent = forms.ChoiceField(choices=Profile._meta.get_field('cookie_consent').choices)
 
-    def clean(self):
-        super(SignUpForm, self).clean()
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise ValidationError("Email is not unique")
-        return self.cleaned_data
+    def save(self, request):
+        user = super(SignUpForm, self).save(request)
+
+        user.profile.display_name_format = self.cleaned_data['display_name_format']
+        user.profile.cookie_consent = self.cleaned_data['cookie_consent']
+	user.profile.save()
+
+        return user

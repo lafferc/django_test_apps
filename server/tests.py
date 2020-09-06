@@ -94,7 +94,7 @@ class SignupTest(TestCase):
         user = User.objects.get(username='new_user')
 
         self.assertEqual(user.email, 'new_user@example.com')
-        self.assertFalse(user.is_active)
+        self.assertTrue(user.is_active)
         self.assertEqual(user.profile.cookie_consent, 1)
         self.assertEqual(user.profile.display_name_format, 1)
 
@@ -103,20 +103,20 @@ class SignupTest(TestCase):
 
         email = mail.outbox[0]
 
-        self.assertEqual(email.subject, 'Activate Your Account')
+        self.assertEqual(email.subject, '[example.com] Please Confirm Your E-mail Address')
         self.assertEqual(email.to, ['new_user@example.com'])
 
         login = self.client.login(username='new_user', password='password')
-        self.assertFalse(login)
+        self.assertTrue(login)
 
-        response = self.client.get(self.url_index)
-        self.assertRedirects(response, self.url_login + '?next=' + self.url_index)
+        # response = self.client.get(self.url_index)
+        # self.assertRedirects(response, self.url_login + '?next=' + self.url_index)
 
-        m = re.search('https?://example.com(/.*/)', email.body)
+        m = re.search('https?://testserver(/.*/)', email.body)
         self.assertIsNotNone(m)
 
         response = self.client.get(m.group(1))
-        self.assertRedirects(response, self.url_index)
+        self.assertEqual(response.status_code, 200)
 
         user = User.objects.get(username='new_user')
         self.assertTrue(user.is_active)
