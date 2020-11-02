@@ -121,6 +121,9 @@ LOGGING = {
             'format': '[%(asctime)s] %(name)-20s - %(levelname)-5s - %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S',
         },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
     },
     'handlers': {
         'console': {
@@ -136,12 +139,22 @@ LOGGING = {
             'backupCount' : 5,
             'formatter': 'default',
         },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'formatter': 'simple',
+        },
     },
     'loggers': {
         'django': {
             'handlers': ['file', 'console'],
             'level': 'INFO',
             'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['mail_admins', 'file', 'console'],
+            'level': 'ERROR',
+            'propagate': False,
         },
         'competition': {
             'handlers': ['console', 'file'],
