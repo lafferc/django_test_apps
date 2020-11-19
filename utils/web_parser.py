@@ -83,6 +83,8 @@ def parse_matches(soup, rows, curr_id=1, tz_delta=None, debug=False):
                 else:
                     row['kick_off'] = datetime.datetime.strptime(' '.join([date, time]), "%Y-%m-%d %H:%M")
 
+        if debug:
+            print("Adding match %r" % row)
         add_match(row)
         rows.append(row)
         curr_id += 1
@@ -132,6 +134,12 @@ if __name__ == "__main__" :
 
     for i in range(args.months):
         date = start_date + relativedelta(months=i)
+        if i:
+            date = date.replace(day=1)
+
+        if args.debug:
+            print("loading page " + url % date)
+
         page = urllib2.urlopen(url % date)
         soup = BeautifulSoup(page, features="html.parser")
 
