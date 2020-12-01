@@ -23,3 +23,8 @@ update:
 	$(target_dir)/manage.py collectstatic --noinput
 	cd $(target_dir); ./manage.py migrate; chown apache:apache *
 	service httpd start
+
+dev:
+	echo "Installing dev env"
+	pip install -r requirements.txt
+	./manage.py migrate
