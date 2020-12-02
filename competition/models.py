@@ -1,11 +1,13 @@
 from django.db import models, IntegrityError
 from django.db.models import Avg, Max
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
-from django.utils import timezone
+from django.core import mail
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
+from django.utils import timezone
 import logging
 import csv
 import datetime
@@ -127,6 +129,9 @@ class Tournament(models.Model):
         current_site = get_current_site(request)
         subject = "Thank you for participating in %s" % self.name
 
+        n_sent = 0
+        connection = mail.get_connection()
+        connection.open()
         for user in self.participants.all():
             message = render_to_string('close_email.html', {
                 'user': user,
@@ -135,7 +140,14 @@ class Tournament(models.Model):
                 'tournament_name': self.name,
                 'site_name': current_site.name,
             })
-            user.profile.email_user(subject, message)
+            if user.profile.email_user(subject,
+                                       message,
+                                       connection=connection):
+                n_sent += 1
+
+        connection.close()
+        messages.success(request,
+                         'The tournament "%s" was closed successfully, %d emails sent.' % (self.name, n_sent))
 
         self.save()
 
@@ -147,6 +159,10 @@ class Tournament(models.Model):
 
         current_site = get_current_site(request)
         subject = "A new competition has started"
+
+        n_sent = 0
+        connection = mail.get_connection()
+        connection.open()
         for user in User.objects.all():
             message = render_to_string('open_email.html', {
                 'user': user,
@@ -155,7 +171,15 @@ class Tournament(models.Model):
                 'site_domain': current_site.name,
                 'protocol': 'https' if request.is_secure() else 'http',
             })
-            user.profile.email_user(subject, message, new_comp=True)
+            if user.profile.email_user(subject,
+                                       message,
+                                       new_comp=True,
+                                       connection=connection):
+                n_sent += 1
+
+        connection.close()
+        messages.success(request,
+                         'The tournament "%s" was opened successfully, %d emails sent.' % (self.name, n_sent))
 
         self.save()
 
@@ -285,7 +309,7 @@ class Participant(Predictor):
         try:
             return Prediction.objects.get(user=self.user, match=match)
         except Prediction.DoesNotExist:
-            print("%s did not predict %s" % (self.user, match))
+            g_logger.debug("%s did not predict %s" % (self.user, match))
             return self.predict(match)
 
     def get_url(self):
@@ -517,7 +541,7 @@ class Benchmark(Predictor):
         try:
             return BenchmarkPrediction.objects.get(benchmark=self, match=match)
         except BenchmarkPrediction.DoesNotExist:
-            print("%s did not predict %s" % (self, match))
+            g_logger.debug("%s did not predict %s" % (self, match))
             return self.predict(match)
 
     def get_url(self):

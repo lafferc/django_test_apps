@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
+from django.core import mail
 from django.utils.translation import gettext as _
 from .models import Ticket, Competition
 from .forms import ProfileEditForm, NameChangeForm
@@ -98,7 +99,9 @@ def announcement(request):
         else:
             user_list = User.objects.all()
 
-        sent_to = 0
+        n_sent = 0
+        connection = mail.get_connection()
+        connection.open()
         for user in user_list:
             message = loader.render_to_string('announcement_email.html', {
                 'user': user,
@@ -107,13 +110,17 @@ def announcement(request):
                 'site_domain': current_site.name,
                 'protocol': 'https' if request.is_secure() else 'http',
             })
-            if user.profile.email_user(subject, message):
-                sent_to += 1
+            if user.profile.email_user(subject,
+                                       message,
+                                       connection=connection):
+                n_sent += 1
+
+        connection.close()
 
         template = loader.get_template('announcement_sent.html')
         context = {
             'site_name': current_site.name,
-            'user_list_len': sent_to,
+            'user_list_len': n_sent,
         }
 
         return HttpResponse(template.render(context, request))

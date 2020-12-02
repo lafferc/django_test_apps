@@ -15,19 +15,22 @@ class ServerViewTest (TestCase):
         test_user1.save()
 
     def test_index(self):
-        response = self.client.get('/')
-        self.assertRedirects(response, '/accounts/login/?next=/')
+        url = reverse('index')
+        r_url = reverse('login')
+        response = self.client.get(url)
+        self.assertRedirects(response, r_url + '?next=' + url)
 
         login = self.client.login(username='testuser1', password='test123')
         self.assertTrue(login)
-        response = self.client.get('/')
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
         self.assertTemplateUsed(response, 'home.html')
         self.assertEqual(len(response.context['live_tournaments']), 0)
 
     def test_signup_logged_out(self):
-        response = self.client.get('/register/')
+        url = reverse('signup')
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'registration/register.html')
 
@@ -68,8 +71,13 @@ class SignupTest(TestCase):
                                               email='test@example.com')
         test_user1.save()
 
+        cls.url_signup = reverse('signup')
+        cls.url_index = reverse('index')
+        cls.url_login = reverse('login')
+
     def test_signup(self):
-        response = self.client.post('/register/', {
+        url = reverse('signup')
+        response = self.client.post(self.url_signup, {
             'username': 'new_user',
             'password1': 'password',
             'password2': 'password',
@@ -99,11 +107,14 @@ class SignupTest(TestCase):
         login = self.client.login(username='new_user', password='password')
         self.assertFalse(login)
 
+        response = self.client.get(self.url_index)
+        self.assertRedirects(response, self.url_login + '?next=' + self.url_index)
+
         m = re.search('https?://testserver(/.*/)', email.body)
         self.assertIsNotNone(m)
 
         response = self.client.get(m.group(1))
-        self.assertRedirects(response, '/')
+        self.assertRedirects(response, self.url_index)
 
         user = User.objects.get(username='new_user')
         self.assertTrue(user.is_active)
@@ -111,12 +122,16 @@ class SignupTest(TestCase):
         login = self.client.login(username='new_user', password='password')
         self.assertTrue(login)
 
+        response = self.client.get(self.url_index)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'home.html')
+
     def test_signup_duplicate_username(self):
 
         users = User.objects.filter(username='testuser1')
         self.assertEqual(len(users), 1)
 
-        response = self.client.post('/register/', {
+        response = self.client.post(self.url_signup, {
             'username': 'testuser1',
             'password1': 'password',
             'password2': 'password',
@@ -125,6 +140,9 @@ class SignupTest(TestCase):
             'display_name_format': 1,
             'g-recaptcha-response': 'PASSED',
             })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/register.html')
 
         self.assertEqual(len(mail.outbox), 0)
 
@@ -140,7 +158,7 @@ class SignupTest(TestCase):
         user = User.objects.get(username='testuser1')
         self.assertEqual(user.email, 'test@example.com')
 
-        response = self.client.post('/register/', {
+        response = self.client.post(self.url_signup, {
             'username': 'new_user',
             'password1': 'password',
             'password2': 'password',
@@ -162,7 +180,7 @@ class SignupTest(TestCase):
         self.assertFalse(login)
 
     def test_signup_password_missmatch(self):
-        response = self.client.post('/register/', {
+        response = self.client.post(self.url_signup, {
             'username': 'new_user',
             'password1': 'password1',
             'password2': 'password2',
