@@ -134,7 +134,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'django_debug.log',
+            'filename': os.path.join(BASE_DIR, 'django_debug.log'),
             'maxBytes' : 1024*1024*10, # 10MB
             'backupCount' : 5,
             'formatter': 'default',
@@ -186,5 +186,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 if DEBUG:
     SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
 else: # !DEBUG
-    RECAPTCHA_PUBLIC_KEY = os.getenv('RECAPTCHA_PUBLIC_KEY')
-    RECAPTCHA_PRIVATE_KEY = os.getenv('RECAPTCHA_PRIVATE_KEY')
+    RECAPTCHA_PUBLIC_KEY = os.getenv('RECAPTCHA_PUBLIC_KEY', None)
+    RECAPTCHA_PRIVATE_KEY = os.getenv('RECAPTCHA_PRIVATE_KEY', None)
