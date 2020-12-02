@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core import mail
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -47,7 +48,7 @@ class Profile(models.Model):
         if self.display_name_format == 2:
             return "user_%d" % self.user.pk
 
-    def email_user(self, subject, message, new_comp=False):
+    def email_user(self, subject, message, new_comp=False, connection=None):
         if not self.user.email:
             g_logger.warn("User %s doesn't have a valid email" % self.get_name())
             return False
@@ -56,7 +57,16 @@ class Profile(models.Model):
         if new_comp and not self.email_on_new_competition:
             return False
         try:
-            self.user.email_user(subject, message)
+            if connection is None:
+                self.user.email_user(subject, message)
+            else:
+                email = mail.EmailMessage(
+                        subject,
+                        message,
+                        None,
+                        [self.user.email],
+                        connection=connection)
+                email.send()
             return True
         except smtplib.SMTPRecipientsRefused:
             g_logger.error("Recipient Refused:'%s' (user: %s)",
