@@ -69,6 +69,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'server.context_processors.selected_settings',
             ],
         },
     },
@@ -188,3 +189,6 @@ if DEBUG:
 else: # !DEBUG
     RECAPTCHA_PUBLIC_KEY = os.getenv('RECAPTCHA_PUBLIC_KEY', None)
     RECAPTCHA_PRIVATE_KEY = os.getenv('RECAPTCHA_PRIVATE_KEY', None)
+
+with open("VERSION") as v_file:
+    APP_VERSION_NUMBER = v_file.read()
