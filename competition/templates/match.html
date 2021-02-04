@@ -64,7 +64,7 @@ Your prediction: {{ prediction.prediction }}
         <td>
             <form id="create_form" action={% url 'competition:submit' match.tournament.name %} method="post">
                 {% csrf_token %}
-                <input type="text" name="{{match.pk}}">
+                <input type="text" name="{{match.pk}}" pattern="^[-+]?\d+(\.\d+)?$">
         </td>
         <td>
             <button data-icon="check" onclick="submit_form('create_form')">sumbit</button>

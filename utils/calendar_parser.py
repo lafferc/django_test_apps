@@ -29,7 +29,7 @@ def parse_events(file_name, debug=False):
               except ValueError:
                   continue
         return events
-    
+
 
 def matches_to_csv(matches, file_name):
     header = ["match_id", "home_team", "away_team", "kick_off", "home_team_winner_of", "away_team_winner_of"]
@@ -40,7 +40,7 @@ def matches_to_csv(matches, file_name):
     with open(file_name, 'w+') as file:
         writer = csv.DictWriter(file, fieldnames=header, )
         writer.writeheader()
-        
+
         for row in matches:
             writer.writerow(row)
 
@@ -62,7 +62,7 @@ def events_to_matches(events, summary_re=g_summary_re):
         curr_id += 1
 
     return rows
-        
+
 
 def events_to_csv(events, file_name, summary_re=g_summary_re):
     rows = events_to_matches(events, summary_re)
@@ -89,7 +89,7 @@ def matches_to_teams(matches):
             teams.append(m['away_team'])
 
     return teams
-        
+
 
 if __name__ == "__main__" :
     import argparse
@@ -107,7 +107,7 @@ if __name__ == "__main__" :
                         default=g_summary_re)
 
     args = parser.parse_args()
-  
+
     if args.debug:
         print(args.regx)
     events = parse_events(args.in_filename, args.debug)

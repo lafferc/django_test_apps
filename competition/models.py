@@ -76,7 +76,7 @@ class Tournament(models.Model):
     bonus = models.DecimalField(max_digits=5, decimal_places=2, default=2)
     draw_bonus = models.DecimalField(max_digits=5, decimal_places=2, default=1)
     late_get_bonus = models.BooleanField(default=False)
-    state = models.IntegerField(default=ACTIVE,
+    state = models.IntegerField(default=PENDING,
                                 choices=((PENDING, "Pending"),
                                          (ACTIVE, "Active"),
                                          (FINISHED, "Finished"),
