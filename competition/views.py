@@ -243,6 +243,8 @@ def join(request, tour_name):
             pass
         return redirect('competition:submit', tour_name=tour_name)
 
+    bonus = float(tournament.bonus)
+
     current_site = get_current_site(request)
     template = loader.get_template('join.html')
     context = {
@@ -250,6 +252,12 @@ def join(request, tour_name):
         'TOURNAMENT': tournament,
         'draw_bonus_value': tournament.bonus * tournament.draw_bonus,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'example_scores': [
+            (1 - bonus),
+            (2 - bonus),
+            (0.5 - bonus),
+            (17.5 - (3 * bonus + bonus * float(tournament.draw_bonus))),
+        ],
     }
     return HttpResponse(template.render(context, request))
 
@@ -306,6 +314,8 @@ def rules(request, tour_name):
             return redirect("competition:join", tour_name=tour_name)
         is_participant = False
 
+    bonus = float(tournament.bonus)
+
     current_site = get_current_site(request)
     template = loader.get_template('display_rules.html')
     context = {
@@ -314,6 +324,12 @@ def rules(request, tour_name):
         'draw_bonus_value': tournament.bonus * tournament.draw_bonus,
         'is_participant': is_participant,
         'live_tournaments': Tournament.objects.filter(state=Tournament.ACTIVE),
+        'example_scores': [
+            (1 - bonus),
+            (2 - bonus),
+            (0.5 - bonus),
+            (17.5 - (3 * bonus + bonus * float(tournament.draw_bonus))),
+        ],
     }
     return HttpResponse(template.render(context, request))
 
