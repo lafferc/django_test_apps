@@ -6,13 +6,19 @@
     <h1>Profile for {{ profile.user }}</h1>
     <p>username:{{ user }}</p>
     <p>Display name:{{ profile.get_name }}</p>
+    <h2>Social Networks</h2>
+    {% for network in social_networks %}
+    <p><a href="{% provider_login_url network process="connect" %}">Connect your {{ network }} account</a>
+    {% endfor %}
+    <p>
+    You have {{ social_connections_count }} accounts connected. 
+    <a href="{% url 'socialaccount_connections' %}">Manage your connections.</a>
+    </p>
+    <h2>Details</h2>
     <form method="post">
         {% csrf_token %}
         {{ user_form.as_p }}
         {{ profile_form.as_p }}
         <button type="submit">Save changes</button>
     </form>
-    <a href="{% provider_login_url "twitter" process="connect" %}">Connect your twitter account</a>
-    <a href="{% provider_login_url "google" process="connect" %}">Connect your google account</a>
-
 {% endblock %}

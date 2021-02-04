@@ -51,7 +51,8 @@
                 <li><a href="{% url 'gdpr' %}">GDPR Policy</a></li>
 {% if user.is_authenticated %}
                 <li data-icon="user"><a href="{% url 'member:profile' %}">Profile</a></li>
-                <li><a href="{% url 'account_change_password' %}">Change Password</a></li>
+                <li data-icon="user"><a href="{% url 'account_change_password' %}">Change Password</a></li>
+                <li data-icon="user"><a href="{% url 'socialaccount_connections' %}">Manage Soical Accounts</a></li>
 {% else %}
                 <li><a href="{% url 'account_login' %}">Login</a></li>
                 <li><a href="{% url 'account_signup' %}">Sign up</a></li>
