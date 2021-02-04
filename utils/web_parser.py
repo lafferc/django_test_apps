@@ -4,8 +4,6 @@ import datetime
 import itertools
 from bs4 import BeautifulSoup
 
-li_count = 0
-
 match_by_str = {}
 match_by_id = {}
 
@@ -40,14 +38,18 @@ def add_match(match):
         match_by_str[" / ".join(perm)] = match
 
 
-def parse_matches(soup, curr_id=1, tz_delta=None):
-    global li_count
-    rows = []
+def parse_matches(soup, rows, curr_id=1, tz_delta=None, debug=False):
     for match_li in soup.find_all("li"):
-        li_count += 1
         if "football" not in match_li["class"]:
-            # print "skipping li, class:%s" % match_li["class"]
-            continue;
+            if debug:
+                print("skipping li, class:%s" % match_li["class"])
+            continue
+        h3_text = match_li.parent.find_previous_sibling('h3').text
+        if "Senior" not in h3_text:
+            if debug:
+                print("skipping li, Senior not in previous h3: %s" % h3_text)
+            continue
+
         row = {
             'match_id': curr_id
         }
@@ -81,15 +83,18 @@ def parse_matches(soup, curr_id=1, tz_delta=None):
                 else:
                     row['kick_off'] = datetime.datetime.strptime(' '.join([date, time]), "%Y-%m-%d %H:%M")
 
+        if debug:
+            print("Adding match %r" % row)
         add_match(row)
         rows.append(row)
         curr_id += 1
-    return rows
+    return curr_id
 
 
 if __name__ == "__main__" :
     import argparse
     from calendar_parser import matches_to_csv
+    from dateutil.relativedelta import relativedelta
 
     parser = argparse.ArgumentParser()
     # parser.add_argument("in_url")
@@ -106,23 +111,38 @@ if __name__ == "__main__" :
     parser.add_argument("--tz_delta",
                         type=int,
                         default=0)
-    parser.add_argument("--date", 
-                        help='date to search from e.g. 1-1-2020',
-                        type=str,
-                        default=datetime.datetime.now().date())
+    parser.add_argument("--date",
+                        help='date to search from e.g. 1-1-2020, default today',
+                        type=str)
+    parser.add_argument("-m", "--months",
+                        type=int,
+                        default=1,
+                        help='number of months from data to process. Default 1')
 
     args = parser.parse_args()
 
     tz_diff = datetime.timedelta(hours=args.tz_delta)
-  
+    next_id = args.start_id;
+    if args.date is None:
+        start_date = datetime.datetime.now().date()
+    else:
+        start_date = datetime.datetime.strptime(args.date, '%d-%m-%Y').date()
+
     url = "https://www.gaa.ie/fixtures-results/library/matches/1/0/0/%s/monthly/_matches-by-date"
 
     matches = []
-    next_id = args.start_id;
 
-    page = urllib2.urlopen(url % args.date)
-    soup = BeautifulSoup(page, features="html.parser")
+    for i in range(args.months):
+        date = start_date + relativedelta(months=i)
+        if i:
+            date = date.replace(day=1)
 
-    matches.extend(parse_matches(soup, next_id, tz_diff))
+        if args.debug:
+            print("loading page " + url % date)
+
+        page = urllib2.urlopen(url % date)
+        soup = BeautifulSoup(page, features="html.parser")
+
+        next_id = parse_matches(soup, matches, next_id, tz_diff, debug=args.debug)
 
     matches_to_csv(matches, args.out_filename)

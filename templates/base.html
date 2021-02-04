@@ -67,5 +67,10 @@
 {% endif %}
             </ul>
         </div><!-- /panel -->
+{% if user.is_superuser %}
+        <div data-role="footer" data-position="fixed">
+            <h3>Version: {{APP_VERSION_NUMBER}}</h3>
+        </div>
+{% endif %}
     </div><!-- /page -->
 </body>

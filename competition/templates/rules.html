@@ -1,22 +1,64 @@
-    <h3>Rules for {{TOURNAMENT.name}}</h3>
-    <p>Predict the margin by which the home team will win e.g.
-        <ul>
-            <li>1 for a one {{TOURNAMENT.sport.scoring_unit}} win for the home
-                team.</li>
-            <li>0 for a draw.</li>
-            <li>-1 for a one {{TOURNAMENT.sport.scoring_unit}} win for the away
-                team.</li>
-            <li>5 for a five {{TOURNAMENT.sport.scoring_unit}} win for the home
-                team.</li>
-            <li>-7 for a seven {{TOURNAMENT.sport.scoring_unit}} win for the
-                away team.</li>
-        </ul>
-    </p>
+    <h3>Rules for {{TOURNAMENT.name}} (How to Play)</h3>
+    <p>Predict the margin by which the home team will win.</p>
     <p>Your prediction for each match is compared with the result. The
     difference is then added to your "score".</p>
     <p>The player with the lowest "score" at the end of the competition wins.
     </p>
-    <p>You may choose decimal values for predicted margins.</p>
+    <p>Enter a positve number for a home win, a negitive number for an away win
+    or 0 for a draw. You may choose decimal values for predicted margins.<p>
+    
+    <div data-role="collapsible">
+	    <h5>Click to show example predictions</h5>
+	    <table style="max-width:100% width:auto" border="1">
+		    <tr>
+			    <th>Match id</th>
+			    <th>Your prediction</th>
+			    <th>Match</th>
+			    <th>comment</th>
+		    </tr>
+		    <tr>
+			    <td>1</td>
+			    <td><input type="text" readonly value=1></td>
+			    <td><a href="#">Home Team Vs Away Team</a></td>
+			    <td>predicting a one {{TOURNAMENT.sport.scoring_unit}}
+                                    win for the home team.</td>
+		    </tr>
+		    <tr>
+			    <td>2</td>
+			    <td><input type="text" readonly value=0></td>
+			    <td><a href="#">Home Team Vs Away Team</a></td>
+			    <td>predicting a draw</td>
+		    </tr>
+		    <tr>
+			    <td>3</td>
+			    <td><input type="text" readonly value=-1></td>
+			    <td><a href="#">Home Team Vs Away Team</a></td>
+			    <td>predicting a one {{TOURNAMENT.sport.scoring_unit}}
+                                    win for the away team.</td>
+		    </tr>
+		    <tr>
+			    <td>4</td>
+			    <td><input type="text" readonly value=5></td>
+			    <td><a href="#">Home Team Vs Away Team</a></td>
+			    <td>predicting a five {{TOURNAMENT.sport.scoring_unit}}
+                                    win for the home team.</td>
+		    </tr>
+		    <tr>
+			    <td>5</td>
+			    <td><input type="text" readonly value=-7></td>
+			    <td><a href="#">Home Team Vs Away Team</a></td>
+			    <td>predicting a seven {{TOURNAMENT.sport.scoring_unit}}
+                                    win for the away team.</td>
+		    </tr>
+		    <tr>
+			    <td>6</td>
+			    <td><input type="text" readonly value=-2.5></td>
+			    <td><a href="#">Home Team Vs Away Team</a></td>
+			    <td>predicting a two or three {{TOURNAMENT.sport.scoring_unit}}
+                                    win for the away team.</td>
+		    </tr>
+	    </table>
+    </div>
 {% if TOURNAMENT.draw_bonus == 1 %}
     <p>If you correctly predict the outcome of the match (home win, away win
     or draw), you will receive a bonus of {{TOURNAMENT.bonus}} points which
@@ -30,6 +72,75 @@
     {{ draw_bonus_value|floatformat:2 }} points will be deducted from your
     "score".</p>
 {% endif %}
+<div data-role="collapsible">
+        <h5>Click to show example results and scores</h5>
+        <table style="max-width:100% width:auto" border="1">
+                <tr>
+                        <th>Match id</th>
+                        <th>Match</th>
+                        <th>Prediction</th>
+                        <th>Result</th>
+                        <th>Score</th>
+                        <th>comment</th>
+                </tr>
+                <tr>
+                        <td>1</td>
+                        <td><a href="#">Home Team Vs Away Team</a></td>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>{{example_scores.0|floatformat:2}}</td>
+                        <td>correctly predicting a home win but out by 1
+                                {{TOURNAMENT.sport.scoring_unit}}.</td>
+                </tr>
+                <tr>
+                        <td>2</td>
+                        <td><a href="#">Home Team Vs Away Team</a></td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>-{{draw_bonus_value|floatformat:2}}</td>
+                        <td>correctly predicting a draw</td>
+                </tr>
+                <tr>
+                        <td>3</td>
+                        <td><a href="#">Home Team Vs Away Team</a></td>
+                        <td>-1</td>
+                        <td>-3</td>
+                        <td>{{example_scores.1|floatformat:2}}</td>
+                        <td>correctly predicting a away win but out by 2
+                                {{TOURNAMENT.sport.scoring_unit}}s.</td>
+                </tr>
+                <tr>
+                        <td>4</td>
+                        <td><a href="#">Home Team Vs Away Team</a></td>
+                        <td>5</td>
+                        <td>-2</td>
+                        <td>{{7|floatformat:2}}</td>
+                        <td>The away team won by two making the prediction wrong
+                                by seven {{TOURNAMENT.sport.scoring_unit}}s</td>
+                </tr>
+                <tr>
+                        <td>5</td>
+                        <td><a href="#">Home Team Vs Away Team</a></td>
+                        <td>-7</td>
+                        <td>0</td>
+                        <td>{{7|floatformat:2}}</td>
+                        <td>The match was a draw making the prediction wrong by
+                                seven {{TOURNAMENT.sport.scoring_unit}}s</td>
+                </tr>
+                <tr>
+                        <td>6</td>
+                        <td><a href="#">Home Team Vs Away Team</a></td>
+                        <td>-2.5</td>
+                        <td>-3</td>
+                        <td>{{example_scores.2|floatformat:2}}</td>
+                        <td>The away team won by 3 {{TOURNAMENT.sport.scoring_unit}}s
+                                and prediction is only out by half a
+                                {{TOURNAMENT.sport.scoring_unit}}.</td>
+                </tr>
+        </table>
+
+        <p>The total score in this example is {{example_scores.3|floatformat:2}}<p>
+</div>
     <p>You cannot submit a prediction for a match after it has started. A draw
     will automatically added for any missed/late predictions. These predictions
     will {% if TOURNAMENT.late_get_bonus %}still{% else %}<u>not</u>{% endif %}

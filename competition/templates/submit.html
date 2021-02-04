@@ -16,7 +16,7 @@
         {% for match in fixture_list %}
             <tr>
                 <td>{{ match.match_id }}</td>
-                <td><input type="text" name="{{match.pk}}"></td>
+                <td><input type="text" name="{{match.pk}}" pattern="^[-+]?\d+(\.\d+)?$"></td>
                 <td><a href="{% url 'competition:match' match.pk %}">{{ match }}</a></td>
             {% if match.postponed %}
                 <td>POSTPONED</td>
