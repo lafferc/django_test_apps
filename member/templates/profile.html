@@ -14,7 +14,9 @@
     You have {{ social_connections_count }} accounts connected. 
     <a href="{% url 'socialaccount_connections' %}">Manage your connections.</a>
     </p>
-    <h2>Details</h2>
+    <h2>Emails</h2>
+    <a href="{% url 'account_email' %}">Manage your emails.</a>
+    <h2>Edit Account Details</h2>
     <form method="post">
         {% csrf_token %}
         {{ user_form.as_p }}
