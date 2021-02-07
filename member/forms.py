@@ -9,12 +9,6 @@ class NameChangeForm(forms.ModelForm):
         fields = ("first_name", "last_name")
 
 
-class ProfileAddForm(forms.ModelForm):
-    class Meta:
-        model = Profile
-        fields = ('display_name_format', 'cookie_consent',)
-
-
 class ProfileEditForm(forms.ModelForm):
     class Meta:
         model = Profile

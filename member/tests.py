@@ -13,7 +13,7 @@ from competition.models import Tournament, Sport, Participant
 class MemberViewLoggedOutTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.url_login_next = reverse('login') + "?next="
+        cls.url_login_next = reverse('account_login') + "?next="
 
     def test_profile(self):
         url = reverse('member:profile')
@@ -41,7 +41,7 @@ class MemberViewTest(TestCase):
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username='testuser1', password='test123')
         cls.user.save()
-        cls.url_login_next = reverse('login') + "?next="
+        cls.url_login_next = reverse('account_login') + "?next="
 
         sport = Sport.objects.create(name='sport')
         cls.tourn = Tournament.objects.create(name='active_tourn', sport=sport, state=Tournament.ACTIVE)
