@@ -49,6 +49,7 @@ INSTALLED_APPS = (
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.twitter',
+    # 'allauth.socialaccount.providers.facebook',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -208,6 +209,26 @@ SITE_ID = 1
 LOGOUT_REDIRECT_URL = '/'
 
 # Provider specific settings SOCIALACCOUNT_PROVIDERS = { 'google': { # For each OAuth based provider, either add a ``SocialApp`` # (``socialaccount`` app) containing the required client # credentials, or list them here: 'APP': { 'client_id': '123', 'secret': '456', 'key': '' } } }
+SOCIALACCOUNT_PROVIDERS = {
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile'],
+        'INIT_PARAMS': {'cookie': True},
+        'FIELDS': [
+            'id',
+            'first_name',
+            'last_name',
+            'middle_name',
+            'name',
+            'name_format',
+            'picture',
+            'short_name'
+        ],
+        'EXCHANGE_TOKEN': True,
+        'VERIFIED_EMAIL': False,
+        'VERSION': 'v7.0',
+    }
+}
 
 # AllAuth settings
 ACCOUNT_EMAIL_REQUIRED = True

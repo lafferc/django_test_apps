@@ -345,6 +345,7 @@ class CompetitionViewNotParticipantTest(TestCase):
 
 
 class CompetitionViewTest(TestCase):
+
     @classmethod
     def setUpTestData(cls):
         #print("setUpTestData: Run once to set up non-modified data for all class methods.")
