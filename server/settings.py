@@ -246,5 +246,5 @@ SOCIALACCOUNT_FORMS = {
     'signup': 'server.forms.SocialSignupForm'
 }
 
-with open("VERSION") as v_file:
+with open(os.path.join(BASE_DIR, "VERSION")) as v_file:
     APP_VERSION_NUMBER = v_file.read()
