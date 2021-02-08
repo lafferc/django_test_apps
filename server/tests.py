@@ -16,7 +16,7 @@ class ServerViewTest (TestCase):
 
     def test_index(self):
         url = reverse('index')
-        r_url = reverse('login')
+        r_url = reverse('account_login')
         response = self.client.get(url)
         self.assertRedirects(response, r_url + '?next=' + url)
 
@@ -29,15 +29,16 @@ class ServerViewTest (TestCase):
         self.assertEqual(len(response.context['live_tournaments']), 0)
 
     def test_signup_logged_out(self):
-        url = reverse('signup')
+        url = reverse('account_signup')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/register.html')
+        self.assertTemplateUsed(response, 'account/signup.html')
 
     def test_activate_logged_out(self):
-        response = self.client.get('/activate/NTg3/5is-557c19a28c27875f3213/')
+        url = reverse('account_confirm_email', kwargs={'key': 'OA:1kDbGm:5GPy-ZdeMB7T3Qhir0sOV-Z0hd0'})
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/activation_invalid.html')
+        self.assertTemplateUsed(response, 'account/email_confirm.html')
 
     def test_about_logged_out(self):
         response = self.client.get('/about/')
@@ -56,7 +57,7 @@ class ServerViewTest (TestCase):
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/accounts/logout/')
-        self.assertEqual(response.status_code, 200)
+        self.assertRedirects(response, '/', target_status_code=302)
 
         response = self.client.get('/')
         self.assertRedirects(response, '/accounts/login/?next=/')
@@ -71,12 +72,13 @@ class SignupTest(TestCase):
                                               email='test@example.com')
         test_user1.save()
 
-        cls.url_signup = reverse('signup')
+        cls.url_signup = reverse('account_signup')
         cls.url_index = reverse('index')
-        cls.url_login = reverse('login')
+        cls.url_login = reverse('account_login')
 
     def test_signup(self):
-        url = reverse('signup')
+        url_conf_email_sent = reverse('account_email_verification_sent')
+
         response = self.client.post(self.url_signup, {
             'username': 'new_user',
             'password1': 'password',
@@ -87,12 +89,12 @@ class SignupTest(TestCase):
             'g-recaptcha-response': 'PASSED',
             })
 
-        self.assertRedirects(response, '/register/activation_sent/')
+        self.assertRedirects(response, url_conf_email_sent)
 
         user = User.objects.get(username='new_user')
 
         self.assertEqual(user.email, 'new_user@example.com')
-        self.assertFalse(user.is_active)
+        self.assertTrue(user.is_active)
         self.assertEqual(user.profile.cookie_consent, 1)
         self.assertEqual(user.profile.display_name_format, 1)
 
@@ -101,20 +103,20 @@ class SignupTest(TestCase):
 
         email = mail.outbox[0]
 
-        self.assertEqual(email.subject, 'Activate Your Account')
+        self.assertEqual(email.subject, '[example.com] Please Confirm Your E-mail Address')
         self.assertEqual(email.to, ['new_user@example.com'])
 
         login = self.client.login(username='new_user', password='password')
-        self.assertFalse(login)
+        self.assertTrue(login)
 
-        response = self.client.get(self.url_index)
-        self.assertRedirects(response, self.url_login + '?next=' + self.url_index)
+        # response = self.client.get(self.url_index)
+        # self.assertRedirects(response, self.url_login + '?next=' + self.url_index)
 
         m = re.search('https?://testserver(/.*/)', email.body)
         self.assertIsNotNone(m)
 
         response = self.client.get(m.group(1))
-        self.assertRedirects(response, self.url_index)
+        self.assertEqual(response.status_code, 200)
 
         user = User.objects.get(username='new_user')
         self.assertTrue(user.is_active)
@@ -142,7 +144,7 @@ class SignupTest(TestCase):
             })
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/register.html')
+        self.assertTemplateUsed(response, 'account/signup.html')
 
         self.assertEqual(len(mail.outbox), 0)
 
@@ -169,7 +171,7 @@ class SignupTest(TestCase):
             })
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/register.html')
+        self.assertTemplateUsed(response, 'account/signup.html')
 
         self.assertEqual(len(mail.outbox), 0)
 
@@ -191,7 +193,7 @@ class SignupTest(TestCase):
             })
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'registration/register.html')
+        self.assertTemplateUsed(response, 'account/signup.html')
 
         self.assertEqual(len(mail.outbox), 0)
 

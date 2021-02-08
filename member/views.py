@@ -12,6 +12,7 @@ from .models import Ticket, Competition
 from .forms import ProfileEditForm, NameChangeForm
 from competition.models import Participant
 import logging
+from allauth.socialaccount.models import SocialAccount, SocialApp
 
 g_logger = logging.getLogger(__name__)
 
@@ -32,6 +33,17 @@ def profile(request):
         user_form = NameChangeForm(instance=request.user)
         profile_form = ProfileEditForm(instance=request.user.profile)
 
+    social_networks = []
+    s_accs = SocialAccount.objects.filter(user=request.user)
+    s_nets = SocialApp.objects.all()
+
+    for net in s_nets:
+        for sacc in s_accs:
+            if net.provider == sacc.provider:
+                break
+        else:
+            social_networks.append(net.provider)
+
     template = loader.get_template('profile.html')
     current_site = get_current_site(request)
     context = {
@@ -39,6 +51,8 @@ def profile(request):
         'site_name': current_site.name,
         'user_form': user_form,
         'profile_form': profile_form,
+        'social_networks': social_networks,
+        'social_connections_count': len(s_accs),
     }
     return HttpResponse(template.render(context, request))
 
