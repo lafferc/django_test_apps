@@ -85,6 +85,13 @@ class Tournament(models.Model):
     add_matches = models.FileField(null=True, blank=True)
     year = models.IntegerField(choices=YEAR_CHOICES, default=current_year)
     test_features_enabled = models.BooleanField(default=False)
+    draw_definition = models.CharField(
+            max_length=20,
+            default="extra_time",
+            choices=(("normal_time", "normal_time"),
+                     ("extra_time", "extra_time"),),
+            null=True,
+            blank=True)
 
     def is_closed(self):
         if self.state in [self.FINISHED, self.ARCHIVED]:
