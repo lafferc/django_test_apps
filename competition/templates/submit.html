@@ -1,8 +1,20 @@
 {% extends "competition_base.html" %}
 
+{% load static %}
+{% block sub_head %}
+<script src={% static 'competition/timezone_helper.js'%}></script>
+<script src={% static 'competition/jquery.are-you-sure.js'%}></script>
+<script src={% static 'competition/ays-beforeunload-shim.js'%}></script>
+<script>
+    $(function() {
+        $('#prediction-submit-form').areYouSure();
+    });
+</script>
+{% endblock %}
+
 {% block content %}
 {% if fixture_list %}
-    <form method="post">{% csrf_token %}
+    <form id="prediction-submit-form" method="post">{% csrf_token %}
         <p>Note: all times are in local time (<span id="tz_str"></span>)</p>
         <p>Only predictions that are filled in will be sent to the server, leave the box blank if you want to fill it in later</p>
         <p>Any prediction submitted after {{ TOURNAMENT.sport.match_start_verb|lower }} will not be counted.</p>

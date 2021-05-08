@@ -145,8 +145,12 @@
     will automatically added for any missed/late predictions. These predictions
     will {% if TOURNAMENT.late_get_bonus %}still{% else %}<u>not</u>{% endif %}
     receive the bonus if the result is a draw. </p> 
+{% if TOURNAMENT.draw_definition == "normal_time" %}
+    <p>A match is considered a draw if both teams are level at the end of normal time.
+    Extra/additional time is not counted. Shootouts are not counted.</p>
+{% elif TOURNAMENT.draw_definition == "extra_time" %}
     <p>If a match has extra/additional time, the match is considered a draw
-    after all extra/additional time has been played. If a match goes to a 
-    shootout it is considered a draw.</p>
+    after all extra/additional time has been played. Shootouts are not counted.</p>
+{% endif %}
 
 

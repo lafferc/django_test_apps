@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.utils import timezone
+from io import StringIO
 import logging
 import csv
 import datetime
@@ -41,8 +42,10 @@ class Sport(models.Model):
         if not csv_file:
             return
 
+        io_file = csv_file.read().decode('utf-8')
+
         g_logger.info("handle_teams_upload for %s csv:%s" % (self, csv_file))
-        reader = csv.DictReader(csv_file, delimiter=',')
+        reader = csv.DictReader(StringIO(io_file), delimiter=',')
         for row in reader:
             try:
                 row['sport'] = self
@@ -85,6 +88,13 @@ class Tournament(models.Model):
     add_matches = models.FileField(null=True, blank=True)
     year = models.IntegerField(choices=YEAR_CHOICES, default=current_year)
     test_features_enabled = models.BooleanField(default=False)
+    draw_definition = models.CharField(
+            max_length=20,
+            default="extra_time",
+            choices=(("normal_time", "normal_time"),
+                     ("extra_time", "extra_time"),),
+            null=True,
+            blank=True)
 
     def is_closed(self):
         if self.state in [self.FINISHED, self.ARCHIVED]:
@@ -191,9 +201,11 @@ class Tournament(models.Model):
         if not csv_file:
             return
 
+        io_file = csv_file.read().decode('utf-8')
+
         g_logger.info("handle_match_upload for %s csv:%s"
                       % (self, csv_file))
-        reader = csv.DictReader(csv_file, delimiter=',')
+        reader = csv.DictReader(StringIO(io_file), delimiter=',')
         for row in reader:
             g_logger.debug("Row: %r" % row)
             if not row:

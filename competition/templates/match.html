@@ -1,5 +1,10 @@
 {% extends "competition_base.html" %}
 
+{% load static %}
+{% block sub_head %}
+<script src={% static 'competition/timezone_helper.js'%}></script>
+{% endblock %}
+
 {% block content %}
 <h2>{{ match }}</h2>
 Match ID: {{match.match_id}}
