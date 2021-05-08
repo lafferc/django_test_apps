@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.utils import timezone
+from io import StringIO
 import logging
 import csv
 import datetime
@@ -41,8 +42,10 @@ class Sport(models.Model):
         if not csv_file:
             return
 
+        io_file = csv_file.read().decode('utf-8')
+
         g_logger.info("handle_teams_upload for %s csv:%s" % (self, csv_file))
-        reader = csv.DictReader(csv_file, delimiter=',')
+        reader = csv.DictReader(StringIO(io_file), delimiter=',')
         for row in reader:
             try:
                 row['sport'] = self
@@ -198,9 +201,11 @@ class Tournament(models.Model):
         if not csv_file:
             return
 
+        io_file = csv_file.read().decode('utf-8')
+
         g_logger.info("handle_match_upload for %s csv:%s"
                       % (self, csv_file))
-        reader = csv.DictReader(csv_file, delimiter=',')
+        reader = csv.DictReader(StringIO(io_file), delimiter=',')
         for row in reader:
             g_logger.debug("Row: %r" % row)
             if not row:
